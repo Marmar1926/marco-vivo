@@ -1,0 +1,1132 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0a09">
+<meta name="robots" content="noindex, nofollow">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Marco Vivo</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Figtree:wght@400;500;600&display=swap">
+<style>
+/* Layout: la imagen ocupa toda la pantalla; la interfaz flota encima y se oculta sola.
+   El pie de foto usa el "Estilo A": DejaVu Sans blanca sobre caja negra semitransparente, abajo a la derecha. */
+@font-face{font-family:"DejaVu Sans";font-display:swap;
+  src:local("DejaVu Sans"),local("DejaVuSans"),url("fonts/DejaVuSans.ttf") format("truetype"),url("https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSans.ttf") format("truetype")}
+:root{
+  --wall:#0b0a09;
+  --ink:#f3eee6;
+  --muted:#b9b0a3;
+  --glass:rgba(18,16,14,.74);
+  --line:rgba(243,238,230,.16);
+  --brass:#d6a75c;
+  --danger:#e07a5f;
+  --pie-bg:rgba(0,0,0,.55);
+  --pie-size:1.7vh;
+  --f-display:"Instrument Serif","Iowan Old Style",Georgia,serif;
+  --f-ui:"Figtree",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-pie:"DejaVu Sans","Bitstream Vera Sans",Verdana,Geneva,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--wall);color:var(--ink);font-family:var(--f-ui);font-size:15px;overflow:hidden;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--brass);outline-offset:3px}
+
+#stage{position:fixed;inset:0;overflow:hidden;background:var(--wall)}
+.layer{position:absolute;inset:0;will-change:opacity,transform,filter}
+.layer .bg{position:absolute;inset:-6%;background-size:cover;background-position:center;filter:blur(40px) brightness(.45) saturate(1.1);transform:scale(1.05)}
+.layer .kb{position:absolute;inset:0;will-change:transform}
+.layer img,.layer video{position:absolute;inset:0;width:100%;height:100%;max-width:none;object-fit:cover;user-select:none;-webkit-user-drag:none;background:transparent}
+.layer.cover .bg{display:none}
+.layer.contain img,.layer.contain video{object-fit:contain;filter:drop-shadow(0 18px 40px rgba(0,0,0,.55))}
+
+.ui{transition:opacity .45s ease}
+body.idle .ui{opacity:0;pointer-events:none}
+body.idle{cursor:none}
+
+#top{position:fixed;inset:0 0 auto;padding-top:calc(14px + env(safe-area-inset-top,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-bottom:40px;background:linear-gradient(rgba(0,0,0,.62),transparent);display:flex;align-items:center;gap:12px;z-index:5}
+.brand{font-family:var(--f-display);font-size:1.6rem;white-space:nowrap;margin-right:6px}
+.brand i{color:var(--brass)}
+.spacer{flex:1;min-width:0}
+.menubtn{border:1px solid var(--line);background:rgba(0,0,0,.3);border-radius:999px;padding:6px 16px 6px 8px;cursor:pointer;display:flex;align-items:center;gap:10px;font-weight:500;min-width:0;max-width:100%}
+.menubtn .ic{width:32px;height:32px;border-radius:50%;background:var(--ink);color:#141210;display:grid;place-items:center;flex:none}
+.menubtn .ic svg{width:16px;height:16px;fill:currentColor}
+.menubtn span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Menú de colecciones */
+#menu{position:fixed;inset:0;z-index:8;background:rgba(11,10,9,.84);backdrop-filter:blur(22px) saturate(1.1);-webkit-backdrop-filter:blur(22px) saturate(1.1);overflow-y:auto;padding-top:calc(clamp(20px,4vh,48px) + env(safe-area-inset-top,0px));padding-bottom:calc(clamp(20px,4vh,48px) + env(safe-area-inset-bottom,0px));padding-left:max(clamp(16px,4vw,72px),env(safe-area-inset-left,0px));padding-right:max(clamp(16px,4vw,72px),env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:clamp(18px,3.5vh,40px);animation:menuIn .35s ease}
+@keyframes menuIn{from{opacity:0}to{opacity:1}}
+.mhead{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.mhead .brand{font-size:clamp(2.2rem,4.6vw,4.2rem);line-height:1;margin:0}
+.mhead p{margin:.5em 0 0;color:var(--muted);font-size:clamp(.9rem,1.2vw,1.1rem)}
+.mclock{text-align:right;font-family:var(--f-display);font-size:clamp(1.8rem,3vw,2.8rem);line-height:1;font-variant-numeric:tabular-nums}
+.mclock small{display:block;font-family:var(--f-ui);font-size:.8rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+#grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,clamp(220px,22vw,380px)),1fr));gap:clamp(12px,2vw,28px)}
+.tile{position:relative;display:block;aspect-ratio:16/10;max-width:100%;border:0;border-radius:14px;overflow:hidden;cursor:pointer;padding:0;background:#1d1a17;text-align:left;transition:transform .25s ease,box-shadow .25s ease;outline:none}
+.tile .cv{position:absolute;inset:0;background-size:cover;background-position:center;transition:transform 1.2s ease,opacity .6s ease}
+.tile .cv.wait{opacity:0}
+.tile::after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 45%,rgba(0,0,0,.78))}
+.tile .tx{position:absolute;left:clamp(12px,1.4vw,22px);right:clamp(12px,1.4vw,22px);bottom:clamp(10px,1.2vw,18px);z-index:1;display:flex;flex-direction:column;gap:2px}
+.tile .tn{font-family:var(--f-display);font-size:clamp(1.5rem,2.3vw,2.3rem);line-height:1.05;color:#fff;text-wrap:balance}
+.tile .tc{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:#e2d9cb;font-weight:600}
+.tile .tag{position:absolute;top:12px;left:12px;z-index:1;font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;font-weight:600;background:rgba(0,0,0,.5);border:1px solid var(--line);color:#e9e1d4;padding:4px 9px;border-radius:999px}
+.tile .now{position:absolute;top:12px;right:12px;z-index:1;font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;font-weight:700;background:var(--brass);color:#1c140a;padding:4px 9px;border-radius:999px}
+.tile.net .cv{background:radial-gradient(120% 90% at 20% 10%,#3b4a5c,transparent 60%),radial-gradient(90% 80% at 90% 100%,#5c4630,transparent 60%),#1d1a17}
+body.menu-open .ui,body.menu-open #pie,body.menu-open #clock,body.menu-open #pausebadge{opacity:0!important;pointer-events:none}
+.tile:hover,.tile:focus{transform:scale(1.035);box-shadow:0 0 0 3px var(--brass),0 18px 40px rgba(0,0,0,.5)}
+.tile:hover .cv,.tile:focus .cv{transform:scale(1.06)}
+.mfoot{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;color:var(--muted);font-size:.92rem}
+.mfoot .btn{display:flex;gap:8px;align-items:center}
+.mfoot .btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7}
+#mhint{margin:0}
+.tile.back{background:transparent;border:1px dashed var(--line)}
+.tile.back::after{display:none}
+.tile.back .tn{color:var(--ink)}
+.tile.special .tag{background:var(--brass);color:#1c140a;border-color:var(--brass)}
+#favMark{color:var(--brass)}
+.iconbtn.fav[aria-pressed="true"]{color:var(--brass);border-color:var(--brass)}
+.iconbtn.fav[aria-pressed="true"] svg{fill:currentColor}
+#night{position:fixed;inset:0;z-index:15;background:#000;opacity:0;transition:opacity 2.5s ease;cursor:none}
+#night.on{opacity:1}
+#night.dim.on{opacity:.72;pointer-events:none}
+.iconbtn{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:rgba(0,0,0,.3);display:grid;place-items:center;cursor:pointer;flex:none}
+.iconbtn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+
+#bottom{position:fixed;inset:auto 0 0;padding-bottom:calc(18px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-top:60px;background:linear-gradient(transparent,rgba(0,0,0,.7));display:flex;justify-content:center;z-index:5}
+#controls{display:flex;gap:10px;align-items:center}
+#controls .iconbtn.big{width:56px;height:56px;background:var(--ink);color:#141210;border-color:var(--ink)}
+#progress{position:fixed;left:0;bottom:0;height:2px;background:var(--brass);width:0;z-index:6;opacity:.85}
+
+/* Pie de foto - Estilo A */
+#pie{position:fixed;right:max(calc(var(--pie-size) * 1.2),env(safe-area-inset-right,0px));bottom:calc(var(--pie-size) * 1.2 + env(safe-area-inset-bottom,0px));z-index:4;max-width:calc(100vw - 32px);background:var(--pie-bg);color:#fff;font-family:var(--f-pie);font-size:max(14px,var(--pie-size));line-height:1.25;padding:.4em .75em;white-space:nowrap;overflow:hidden;pointer-events:none;transition:opacity .9s ease,bottom .45s ease}
+#pie.off{opacity:0}
+body:not(.idle) #pie{bottom:calc(98px + env(safe-area-inset-bottom,0px))}
+
+#clock{position:fixed;left:max(24px,env(safe-area-inset-left,0px));top:calc(22px + env(safe-area-inset-top,0px));font-family:var(--f-display);font-size:clamp(2rem,4.2vw,3.8rem);line-height:1;font-variant-numeric:tabular-nums;text-shadow:0 2px 18px rgba(0,0,0,.75);z-index:4;pointer-events:none}
+#clock small{display:block;font-family:var(--f-ui);font-size:.82rem;letter-spacing:.14em;text-transform:uppercase;color:#e9e1d4;margin-top:6px}
+body:not(.idle) #clock{opacity:0}
+
+#pausebadge{position:fixed;top:calc(84px + env(safe-area-inset-top,0px));right:max(18px,env(safe-area-inset-right,0px));z-index:4;font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;background:var(--glass);border:1px solid var(--line);padding:6px 12px;border-radius:999px;color:var(--brass)}
+body.idle #pausebadge{top:calc(18px + env(safe-area-inset-top,0px));opacity:.7}
+
+#center{position:fixed;inset:0;display:grid;place-items:center;z-index:7;pointer-events:none;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.card{pointer-events:auto;background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:18px;padding:28px 30px;width:min(460px,100%);text-align:center}
+.card h3{margin:0 0 6px;font-family:var(--f-display);font-weight:400;font-size:2rem}
+.card p{margin:0 0 18px;color:var(--muted);line-height:1.5}
+.card .err{color:var(--danger);min-height:1.4em;margin:-6px 0 12px}
+.row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:rgba(255,255,255,.06);border-radius:10px;padding:11px 16px;cursor:pointer;font-weight:500}
+.btn.primary{background:var(--brass);border-color:var(--brass);color:#1c140a}
+.btn.danger{color:var(--danger);border-color:rgba(224,122,95,.4)}
+.btn:disabled{opacity:.5;cursor:default}
+.pw{width:100%;background:#1f1c19;border:1px solid var(--line);border-radius:10px;padding:13px 14px;margin-bottom:14px;font-size:1.05rem;text-align:center}
+.spinner{width:34px;height:34px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--brass);animation:spin 1s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+#panel{position:fixed;top:0;right:0;bottom:0;width:min(400px,100%);background:rgba(16,14,12,.95);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-left:1px solid var(--line);z-index:10;overflow-y:auto;padding-top:calc(20px + env(safe-area-inset-top,0px));padding-bottom:calc(30px + env(safe-area-inset-bottom,0px));padding-left:22px;padding-right:max(22px,env(safe-area-inset-right,0px));transform:translateX(105%);transition:transform .35s ease}
+#panel.open{transform:none}
+#panel header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+#panel h3{margin:0;font-family:var(--f-display);font-weight:400;font-size:1.8rem}
+#panel h4{margin:26px 0 10px;font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--brass);font-weight:600}
+.field{display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px 12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.field output{color:var(--muted);font-variant-numeric:tabular-nums;font-size:.9rem}
+.field input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--brass)}
+.field select{background:#1f1c19;border:1px solid var(--line);border-radius:8px;padding:7px 10px;max-width:190px}
+.field input[type=checkbox]{width:20px;height:20px;accent-color:var(--brass)}
+.info{color:var(--muted);line-height:1.5;margin:0 0 12px;font-size:.92rem}
+.stack{display:flex;flex-direction:column;gap:8px}
+.stack .btn{text-align:left}
+.keys{color:var(--muted);font-size:.85rem;line-height:1.75}
+.keys kbd{font-family:var(--f-ui);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;color:var(--ink);font-size:.78rem}
+#toast{position:fixed;left:50%;top:calc(80px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:var(--glass);border:1px solid var(--line);padding:10px 16px;border-radius:10px;z-index:20;transition:opacity .3s;max-width:calc(100% - 32px)}
+#toast.off{opacity:0;pointer-events:none}
+
+@media (max-width:640px){ #top .brand{display:none} .mclock{display:none} }
+@media (prefers-reduced-motion:reduce){ .layer,.ui,#pie{transition:none} }
+</style>
+</head>
+<body>
+
+<div id="stage"></div>
+<div id="progress"></div>
+<div id="pie" class="off"><span id="favMark" hidden>♥ </span><span id="pieText"></span></div>
+<div id="night" hidden></div>
+<div id="clock" hidden><span id="ct"></span><small id="cd"></small></div>
+<div id="pausebadge" hidden>En pausa</div>
+<div id="center"></div>
+
+<header id="top" class="ui">
+  <div class="brand">Marco <i>Vivo</i></div>
+  <button class="menubtn" id="btnMenu" aria-label="Abrir el menú"><span class="ic"><svg viewBox="0 0 16 16"><rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/></svg></span><span id="curName">Menú</span></button>
+  <div class="spacer"></div>
+  <button class="iconbtn" id="btnFull" aria-label="Pantalla completa" title="Pantalla completa (F)"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+  <button class="iconbtn" id="btnSettings" aria-label="Ajustes" title="Ajustes (S)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+</header>
+
+<footer id="bottom" class="ui">
+  <div id="controls">
+    <button class="iconbtn" id="btnPrev" aria-label="Anterior"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
+    <button class="iconbtn big" id="btnPlay" aria-label="Pausar"><svg viewBox="0 0 24 24" id="playIcon"><path d="M9 6v12M15 6v12"/></svg></button>
+    <button class="iconbtn" id="btnNext" aria-label="Siguiente"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+    <button class="iconbtn fav" id="btnFav" aria-label="Marcar como favorita" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg></button>
+  </div>
+</footer>
+
+<section id="menu" aria-label="Menú de colecciones" hidden>
+  <header class="mhead">
+    <div><div class="brand" id="mtitle">Marco <i>Vivo</i></div><p id="msub">¿Qué querés ver?</p></div>
+    <div class="mclock"><span id="mt"></span><small id="md"></small></div>
+  </header>
+  <div id="grid" role="list"></div>
+  <footer class="mfoot">
+    <p id="mhint"></p>
+    <button class="btn" id="btnMenuSettings"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>Ajustes</button>
+  </footer>
+</section>
+
+<aside id="panel" aria-label="Ajustes" aria-hidden="true">
+  <header><h3>Ajustes</h3><button class="iconbtn" id="btnClose" aria-label="Cerrar"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></header>
+
+  <h4>Reproducción</h4>
+  <div class="field"><label for="sDur">Tiempo por imagen</label><output id="oDur"></output><input type="range" id="sDur" min="5" max="180" step="5"></div>
+  <div class="field"><label for="sTrans">Transición</label><select id="sTrans">
+    <option value="fade">Fundido</option><option value="dissolve">Fundido con enfoque</option><option value="slide">Deslizar</option><option value="black">Pasar por negro</option><option value="random">Variada</option><option value="none">Corte directo</option></select></div>
+  <div class="field"><label for="sTDur">Duración de la transición</label><output id="oTDur"></output><input type="range" id="sTDur" min="0.5" max="5" step="0.5"></div>
+  <div class="field"><label for="sKB">Movimiento sobre la imagen</label><select id="sKB">
+    <option value="0">Sin movimiento</option><option value="1">Suave</option><option value="2">Marcado</option></select></div>
+  <div class="field"><label for="sFit">Encuadre</label><select id="sFit">
+    <option value="auto">Automático</option><option value="cover">Llenar la pantalla</option><option value="contain">Mostrar completa</option></select></div>
+  <div class="field"><label for="sOrder">Orden de mis fotos</label><select id="sOrder">
+    <option value="random">Aleatorio</option><option value="seq">Por fecha</option></select></div>
+
+  <h4>Videos</h4>
+  <div class="field"><label for="sVDur">Tiempo por video</label><select id="sVDur">
+    <option value="1">1 minuto</option><option value="3">3 minutos</option><option value="5">5 minutos</option><option value="10">10 minutos</option><option value="30">30 minutos</option><option value="0">Hasta que lo cambie</option></select></div>
+  <div class="field"><label for="sVSound">Sonido de los videos</label><input type="checkbox" id="sVSound"></div>
+
+  <h4>Día a noche</h4>
+  <div class="field"><label for="sDN">Duración de cada día a noche</label><select id="sDN">
+    <option value="30">30 segundos</option><option value="60">1 minuto</option><option value="120">2 minutos</option><option value="300">5 minutos</option></select></div>
+
+  <h4>Horario nocturno</h4>
+  <div class="field"><label for="sNMode">De noche</label><select id="sNMode">
+    <option value="off">No cambiar nada</option><option value="black">Apagar la pantalla</option><option value="dim">Bajar el brillo</option><option value="videos">Pasar a Videos</option></select></div>
+  <div class="field"><label for="sNFrom">Desde las</label><select id="sNFrom"></select></div>
+  <div class="field"><label for="sNTo">Hasta las</label><select id="sNTo"></select></div>
+  <p class="info">Si tocás la pantalla o el control durante la noche, se enciende 10 minutos.</p>
+  <div class="stack"><button class="btn" id="btnNightTest">Probar 15 segundos</button></div>
+
+  <h4>Pie de foto</h4>
+  <div class="field"><label for="sPie">Mostrar el pie</label><select id="sPie">
+    <option value="always">Siempre</option><option value="change">Unos segundos al cambiar</option><option value="never">Nunca</option></select></div>
+  <div class="field"><label for="sPieSize">Tamaño de la letra</label><select id="sPieSize">
+    <option value="1.7">Normal (1,7 %)</option><option value="2.4">Grande</option><option value="3.2">Muy grande</option></select></div>
+
+  <h4>Pantalla</h4>
+  <div class="field"><label for="sClock">Mostrar reloj</label><input type="checkbox" id="sClock"></div>
+  <div class="field"><label for="sInet">Colecciones de Internet en el menú</label><input type="checkbox" id="sInet"></div>
+  <div class="field"><label for="sQual">Calidad de Internet</label><select id="sQual">
+    <option value="high">Alta (TV 4K)</option><option value="light">Liviana (más rápida)</option></select></div>
+
+  <h4>Favoritas</h4>
+  <p class="info">Marcá la foto que se está viendo con el corazón, la tecla amarilla del control o manteniendo apretado OK. Se guardan en este aparato. Para que aparezcan en todos, poné una x en la columna «favorita» de pies.csv.</p>
+  <div class="stack"><button class="btn danger" id="btnFavClear" hidden>Quitar las favoritas de este aparato</button></div>
+
+  <h4>Instalar en la tablet</h4>
+  <p class="info" id="installInfo">En Chrome: menú ⋮ › «Agregar a la pantalla principal» (o «Instalar app»). Queda un ícono que abre Marco Vivo a pantalla completa y guarda las últimas fotos para que siga andando sin Wi-Fi.</p>
+  <div class="stack"><button class="btn primary" id="btnInstall" hidden>Instalar Marco Vivo</button></div>
+
+  <h4>Mis fotos</h4>
+  <p class="info" id="libInfo"></p>
+  <div class="stack">
+    <button class="btn" id="btnReload">Buscar fotos nuevas</button>
+    <button class="btn danger" id="btnForget">Olvidar la contraseña en este aparato</button>
+  </div>
+
+  <h4>Control remoto y teclado</h4>
+  <p class="keys"><kbd>←</kbd> <kbd>→</kbd> imagen o video anterior / siguiente<br><kbd>OK</kbd> o <kbd>Espacio</kbd> pausar y reanudar<br><kbd>↑</kbd> <kbd>↓</kbd> o <kbd>Atrás</kbd> abrir el menú<br>En el menú: flechas para moverse, <kbd>OK</kbd> para elegir<br>Mantener <kbd>OK</kbd> o tecla amarilla: marcar favorita<br><kbd>S</kbd> ajustes · <kbd>F</kbd> pantalla completa</p>
+</aside>
+
+<div id="toast" class="off" role="status"></div>
+
+<script>
+(() => {
+"use strict";
+const $ = s => document.querySelector(s);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const rand = (a, b) => a + Math.random() * (b - a);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const stripHtml = h => { const d = document.createElement("div"); d.innerHTML = h || ""; return (d.textContent || "").replace(/\s+/g, " ").trim(); };
+const store = {
+  get(k, d) { try { const v = localStorage.getItem("marco." + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem("marco." + k, JSON.stringify(v)); } catch {} },
+  del(k) { try { localStorage.removeItem("marco." + k); } catch {} }
+};
+
+/* ---------------- ajustes ---------------- */
+const DEF = { dur: 25, trans: "fade", tdur: 2.5, kb: matchMedia("(prefers-reduced-motion: reduce)").matches ? "0" : "1",
+  fit: "auto", order: "random", pie: "always", pieSize: "1.7", clock: false, inet: true, qual: "high", vdur: "5", vsound: false,
+  dndur: "60", nmode: "off", nfrom: "0", nto: "7" };
+const S = Object.assign({}, DEF, store.get("settings", {}));
+const saveS = () => store.set("settings", S);
+
+/* ---------------- cifrado (AES-256-GCM, clave derivada con PBKDF2-SHA256) ---------------- */
+const b64d = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+const b64e = u => btoa(String.fromCharCode(...u));
+let aesKey = null, libCfg = null, library = null;
+
+async function keyFromPassword(pw) {
+  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(pw), "PBKDF2", false, ["deriveBits"]);
+  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", salt: b64d(libCfg.salt), iterations: libCfg.iter, hash: "SHA-256" }, base, 512);
+  return new Uint8Array(bits).slice(0, 32);
+}
+const importAes = raw => crypto.subtle.importKey("raw", raw, "AES-GCM", false, ["decrypt"]);
+async function decrypt(buf, key = aesKey) {
+  const u = new Uint8Array(buf);
+  return crypto.subtle.decrypt({ name: "AES-GCM", iv: u.slice(0, 12) }, key, u.slice(12));
+}
+async function fetchBin(path) {
+  const r = await fetch(path, { cache: path.includes("?") ? "no-store" : "default" });
+  if (!r.ok) throw new Error(r.status);
+  return r.arrayBuffer();
+}
+async function fetchManifest(key) {
+  const plain = await decrypt(await fetchBin("data/manifest.bin?t=" + Date.now()), key);
+  return JSON.parse(new TextDecoder().decode(plain));
+}
+async function loadConfig() {
+  try { const r = await fetch("data/config.json?t=" + Date.now(), { cache: "no-store" }); if (!r.ok) return null; return await r.json(); }
+  catch { return null; }
+}
+
+/* ---------------- fechas y pies ---------------- */
+const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+function fmtFecha(iso) {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-");
+  if (d) return `${+d} de ${MESES[+m - 1]} de ${y}`;
+  if (m) { const s = MESES[+m - 1]; return `${s[0].toUpperCase() + s.slice(1)} de ${y}`; }
+  return y;
+}
+function captionFor(coll, p) {
+  const f = fmtFecha(p.d);
+  switch (p.m || coll.modo) {
+    case "lugar_fecha": return [p.l, f].filter(Boolean).join(" · ");
+    case "lugar": return p.l || "";
+    case "obra": return [p.l, p.x].filter(Boolean).join(" · ");
+    default: return [p.l, p.x, f].filter(Boolean).join(" · ");
+  }
+}
+
+/* ---------------- fuentes de Internet ---------------- */
+const longSide = () => Math.max(screen.width, screen.height) * (window.devicePixelRatio || 1);
+const wantW = () => S.qual === "light" ? 1280 : (longSide() > 2000 ? 3840 : 1920);
+const getJSON = async url => { const r = await fetch(url); if (!r.ok) throw new Error(r.status); return r.json(); };
+const WM = "https://commons.wikimedia.org/w/api.php?format=json&origin=*&";
+
+async function wmCategoryFiles(cat, depth) {
+  const d = await getJSON(WM + "action=query&list=categorymembers&cmtype=file|subcat&cmlimit=500&cmtitle=" + encodeURIComponent("Category:" + cat));
+  const m = (d.query && d.query.categorymembers) || [];
+  let files = m.filter(x => x.ns === 6).map(x => x.title);
+  if (depth > 0) {
+    const subs = shuffle(m.filter(x => x.ns === 14).map(x => x.title.replace(/^Category:/, ""))).slice(0, 5);
+    const more = await Promise.allSettled(subs.map(s => wmCategoryFiles(s, depth - 1)));
+    more.forEach(p => { if (p.status === "fulfilled") files = files.concat(p.value); });
+  }
+  return files;
+}
+async function wmInfo(titles) {
+  const d = await getJSON(WM + "action=query&prop=imageinfo&iiprop=url|size|mime|extmetadata&iiextmetadatalanguage=es&iiextmetadatafilter=ObjectName|ImageDescription&iiurlwidth=" + wantW() + "&titles=" + encodeURIComponent(titles.join("|")));
+  return Object.values((d.query && d.query.pages) || {}).map(p => {
+    const ii = p.imageinfo && p.imageinfo[0]; if (!ii || !/jpeg|png|webp/.test(ii.mime || "")) return null;
+    const md = ii.extmetadata || {};
+    const title = stripHtml(md.ObjectName && md.ObjectName.value) || p.title.replace(/^File:/, "").replace(/\.\w+$/, "").replace(/_/g, " ");
+    return { src: ii.thumburl || ii.url, fallbacks: [ii.url], caption: title, fit: "cover" };
+  }).filter(Boolean);
+}
+function landscapesSource() {
+  const cats = ["Featured pictures of landscapes", "Featured pictures of mountains", "Featured pictures of lakes", "Featured pictures of seascapes", "Featured pictures of forests"];
+  let titles = null;
+  return async () => {
+    if (!titles || !titles.length) {
+      const res = await Promise.allSettled(cats.map(c => wmCategoryFiles(c, 1)));
+      titles = shuffle([...new Set(res.flatMap(r => r.status === "fulfilled" ? r.value : []))]);
+      if (!titles.length) throw new Error("sin resultados");
+    }
+    return wmInfo(titles.splice(0, 20));
+  };
+}
+function paintingsSource() {
+  const terms = ["landscape", "seascape", "river", "mountains", "garden", "countryside", "harbor", "forest", "sunset", "winter landscape", "coast"];
+  let metIds = null, turn = 0;
+  async function aic() {
+    const q = terms[Math.random() * terms.length | 0], page = 1 + (Math.random() * 4 | 0);
+    const d = await getJSON("https://api.artic.edu/api/v1/artworks/search?q=" + encodeURIComponent(q) + "&query[term][is_public_domain]=true&fields=id,title,artist_title,date_display,image_id,classification_title&limit=40&page=" + page);
+    const base = (d.config && d.config.iiif_url) || "https://www.artic.edu/iiif/2", big = S.qual === "light" ? 843 : 1686;
+    return (d.data || []).filter(a => a.image_id && /paint/i.test(a.classification_title || "")).map(a => ({
+      src: `${base}/${a.image_id}/full/${big},/0/default.jpg`, fallbacks: [`${base}/${a.image_id}/full/843,/0/default.jpg`],
+      caption: [a.title, a.artist_title, a.date_display].filter(Boolean).join(" · "), fit: "contain" }));
+  }
+  async function met() {
+    if (!metIds || !metIds.length) {
+      const q = terms[Math.random() * terms.length | 0];
+      const d = await getJSON("https://collectionapi.metmuseum.org/public/collection/v1/search?hasImages=true&isPublicDomain=true&departmentId=11&q=" + encodeURIComponent(q));
+      metIds = shuffle((d.objectIDs || []).slice(0, 300));
+    }
+    const res = await Promise.allSettled(metIds.splice(0, 8).map(id => getJSON("https://collectionapi.metmuseum.org/public/collection/v1/objects/" + id)));
+    return res.filter(r => r.status === "fulfilled").map(r => r.value)
+      .filter(o => o.isPublicDomain && o.primaryImage && /paint/i.test(o.classification + o.objectName))
+      .map(o => ({ src: S.qual === "light" ? (o.primaryImageSmall || o.primaryImage) : o.primaryImage, fallbacks: [o.primaryImageSmall],
+        caption: [o.title, o.artistDisplayName, o.objectDate].filter(Boolean).join(" · "), fit: "contain" }));
+  }
+  return async () => {
+    const order = (turn++ % 2) ? [met, aic] : [aic, met];
+    for (const f of order) { try { const r = await f(); if (r.length) return shuffle(r); } catch (e) { console.warn(e); } }
+    throw new Error("sin resultados");
+  };
+}
+const INTERNET = [
+  { id: "net-museos", nombre: "Museos", net: "paintings" },
+  { id: "net-paisajes", nombre: "Paisajes del mundo", net: "landscapes" }
+];
+
+/* ---------------- colecciones y listas de reproducción ---------------- */
+function allColls() {
+  const own = library ? library.colecciones.filter(c => c.fotos.length) : [];
+  return [...own, ...(S.inet || !own.length ? INTERNET : [])];
+}
+let activeId = store.get("active", null);
+
+const blobCache = new Map();
+function fetchPhoto(fid) {
+  if (!blobCache.has(fid)) {
+    const p = fetchBin("data/" + fid + ".bin")
+      .then(b => decrypt(b)).then(plain => new Blob([plain], { type: "image/jpeg" }));
+    p.catch(() => blobCache.delete(fid));
+    blobCache.set(fid, p);
+    while (blobCache.size > 10) blobCache.delete(blobCache.keys().next().value);
+  }
+  return blobCache.get(fid);
+}
+// miniaturas para las portadas del menú (si no hay, usa la foto completa)
+const thumbCache = new Map();
+function thumbUrl(item) {
+  if (!thumbCache.has(item.f)) {
+    const full = () => item.t === "v" ? Promise.reject(new Error("sin portada")) : fetchPhoto(item.f);
+    const p = fetchBin("data/" + item.f + "t.bin").then(b => decrypt(b)).then(plain => new Blob([plain], { type: "image/jpeg" }))
+      .catch(full).then(b => URL.createObjectURL(b));
+    p.catch(() => thumbCache.delete(item.f));
+    thumbCache.set(item.f, p);
+  }
+  return thumbCache.get(item.f);
+}
+
+function makePlaylist(coll) {
+  if (!coll.net) {
+    let order = [], i = -1;
+    const build = () => { order = coll.fotos.slice(); if (S.order === "random") shuffle(order); i = -1; };
+    build();
+    return {
+      reset: build,
+      async step(dir) {
+        if (!order.length) return null;
+        i = (i + dir + order.length) % order.length;
+        const p = order[i];
+        const nxt = order[(i + 1) % order.length]; if (nxt && nxt !== p && nxt.t !== "v") (nxt.seq || [nxt.f]).forEach(f => fetchPhoto(f).catch(() => {}));
+        const base = { key: p.f, w: p.w, h: p.h, caption: captionFor(coll, p), fit: "auto", solo: order.length === 1, favCsv: !!p.fav };
+        if (p.t === "v") return { ...base, vid: "data/" + p.f + ".mp4" };
+        if (p.seq) return { ...base, seq: p.seq };
+        return { ...base, fid: p.f };
+      }
+    };
+  }
+  const batch = coll.net === "paintings" ? paintingsSource() : landscapesSource();
+  const queue = [], hist = []; let pos = -1, filling = null;
+  const fill = () => filling || (filling = (async () => { try { for (let t = 0; t < 3 && queue.length < 6; t++) { try { queue.push(...await batch()); } catch (e) { if (t === 2) throw e; await sleep(800); } } } finally { filling = null; } })());
+  return {
+    reset() {},
+    async step(dir) {
+      if (dir < 0) { if (pos > 0) pos--; return hist[pos] || null; }
+      if (pos < hist.length - 1) return hist[++pos];
+      if (queue.length < 3) { const f = fill(); if (!queue.length) await f; }
+      const it = queue.shift(); if (!it) return null;
+      hist.push(it); if (hist.length > 60) hist.shift(); pos = hist.length - 1;
+      if (queue[0]) { const im = new Image(); im.src = queue[0].src; }
+      return it;
+    }
+  };
+}
+let playlists = {};
+const pl = id => playlists[id] || (playlists[id] = makePlaylist(getColl(id)));
+
+/* ---------------- motor del slideshow ---------------- */
+const stage = $("#stage");
+let current = null, timer = null, paused = store.get("paused", false), busy = false, slideStart = 0, remaining = 0, gen = 0;
+
+const dims = el => el.tagName === "VIDEO" ? [el.videoWidth || 16, el.videoHeight || 9] : [el.naturalWidth, el.naturalHeight];
+function loadVideo(it) {
+  return new Promise((res, rej) => {
+    const v = document.createElement("video");
+    v.muted = true; v.loop = true; v.playsInline = true; v.preload = "auto";
+    v.setAttribute("playsinline", ""); v.setAttribute("muted", "");
+    let done = false;
+    const fail = err => { if (done) return; done = true; v.removeAttribute("src"); v.load(); rej(err); };
+    const to = setTimeout(() => fail(new Error("el video tarda demasiado")), 25000);
+    v.addEventListener("canplay", () => { if (done) return; done = true; clearTimeout(to); res({ el: v, url: null }); }, { once: true });
+    v.addEventListener("error", () => { clearTimeout(to); fail(new Error("no carga el video")); }, { once: true });
+    v.src = it.vid;
+  });
+}
+function playVideo(v, fadeMs) {
+  const wantSound = S.vsound && !menuOpen;
+  v.muted = !wantSound; v.volume = wantSound ? 0 : 1;
+  const p = v.play();
+  const after = () => { if (wantSound) rampVolume(v, 1, fadeMs); };
+  if (p && p.then) p.then(after).catch(() => { v.muted = true; v.play().catch(() => {}); if (wantSound) toast("Tocá la pantalla una vez para activar el sonido."); });
+  else after();
+}
+function rampVolume(v, to, ms) {
+  clearInterval(v._ramp);
+  const from = v.volume, t0 = performance.now();
+  v._ramp = setInterval(() => {
+    const f = Math.min(1, (performance.now() - t0) / Math.max(1, ms));
+    try { v.volume = from + (to - from) * f; } catch {}
+    if (f >= 1) clearInterval(v._ramp);
+  }, 50);
+}
+function disposeLayer(c) {
+  c.layer.remove();
+  [].concat(c.url || []).forEach(u => URL.revokeObjectURL(u));
+  if (c.el && c.el.tagName === "VIDEO") { clearInterval(c.el._ramp); c.el.pause(); c.el.removeAttribute("src"); c.el.load(); }
+}
+// día a noche: todas las fotos de la secuencia, apiladas
+async function loadSeq(it) {
+  const blobs = await Promise.all(it.seq.map(fetchPhoto));
+  const urls = blobs.map(b => URL.createObjectURL(b));
+  const imgs = await Promise.all(urls.map(u => new Promise((res, rej) => {
+    const im = new Image(); im.decoding = "async"; im.alt = it.caption || "";
+    im.onload = () => (im.decode ? im.decode().catch(() => {}) : Promise.resolve()).then(() => res(im));
+    im.onerror = () => rej(new Error("no carga")); im.src = u;
+  }))).catch(e => { urls.forEach(u => URL.revokeObjectURL(u)); throw e; });
+  return { el: imgs[0], extra: imgs.slice(1), url: urls };
+}
+async function loadMedia(it) {
+  if (it.vid) return loadVideo(it);
+  if (it.seq) return loadSeq(it);
+  const r = await loadImg(it);
+  return { el: r.img, url: r.url };
+}
+async function loadImg(it) {
+  let urls, objUrl = null;
+  if (it.fid) { objUrl = URL.createObjectURL(await fetchPhoto(it.fid)); urls = [objUrl]; }
+  else urls = [it.src, ...(it.fallbacks || [])].filter(Boolean);
+  return new Promise((res, rej) => {
+    let k = 0; const img = new Image(); img.decoding = "async"; img.alt = it.caption || "";
+    const tryNext = () => { if (k >= urls.length) { objUrl && URL.revokeObjectURL(objUrl); return rej(new Error("no carga")); } img.src = urls[k++]; };
+    img.onload = () => (img.decode ? img.decode().catch(() => {}) : Promise.resolve()).then(() => res({ img, url: objUrl }));
+    img.onerror = tryNext; tryNext();
+  });
+}
+function decideFit(it, el) {
+  if (S.fit !== "auto") return S.fit;
+  if (it.fit === "contain") return "contain";
+  const [w, h] = dims(el), ar = w / h, sr = innerWidth / innerHeight;
+  return Math.abs(Math.log(ar / sr)) > 0.42 ? "contain" : "cover";
+}
+function kenBurns(el, ms) {
+  const lvl = +S.kb; if (!lvl || !el.animate) return null;
+  const z = lvl === 2 ? [1.04, 1.22] : [1.02, 1.10], t = lvl === 2 ? 4 : 2;
+  const s1 = rand(z[0], z[1]), s2 = rand(z[0], z[1]), zoomIn = Math.random() < .5;
+  const a = zoomIn ? Math.min(s1, s2) : Math.max(s1, s2), b = zoomIn ? Math.max(s1, s2) + .03 : Math.min(s1, s2);
+  const p = () => `${rand(-t, t).toFixed(2)}%, ${rand(-t, t).toFixed(2)}%`;
+  return el.animate([{ transform: `scale(${a}) translate(${p()})` }, { transform: `scale(${b}) translate(${p()})` }], { duration: ms, easing: "linear", fill: "forwards" });
+}
+function transitionFx(kind) {
+  if (kind === "random") kind = ["fade", "dissolve", "slide", "black"][Math.random() * 4 | 0];
+  const T = S.tdur * 1000;
+  const map = {
+    none: { inn: [[{ opacity: 1 }, { opacity: 1 }], 1], out: [[{ opacity: 1 }, { opacity: 0 }], 1] },
+    fade: { inn: [[{ opacity: 0 }, { opacity: 1 }], T], out: [[{ opacity: 1 }, { opacity: 0 }], T] },
+    dissolve: { inn: [[{ opacity: 0, filter: "blur(14px)", transform: "scale(1.06)" }, { opacity: 1, filter: "blur(0)", transform: "scale(1)" }], T], out: [[{ opacity: 1, filter: "blur(0)" }, { opacity: 0, filter: "blur(10px)" }], T] },
+    slide: { inn: [[{ transform: "translateX(100%)" }, { transform: "translateX(0)" }], T], out: [[{ transform: "translateX(0)", opacity: 1 }, { transform: "translateX(-35%)", opacity: .2 }], T] },
+    black: { inn: [[{ opacity: 0 }, { opacity: 1 }], T / 2, T / 2], out: [[{ opacity: 1 }, { opacity: 0 }], T / 2] }
+  };
+  return { ...map[kind], e: "cubic-bezier(.45,0,.25,1)" };
+}
+
+async function show(dir = 1) {
+  if (busy) return; busy = true; clearTimeout(timer);
+  const my = ++gen, id = activeId;
+  try {
+    let it = null, loaded = null;
+    for (let tries = 0; tries < 15 && !loaded; tries++) {
+      try { it = await pl(id).step(tries ? (dir || 1) : dir); } catch (e) { console.warn(e); it = null; }
+      if (my !== gen || id !== activeId) return;
+      if (!it) break;
+      // una colección con un solo video: sigue en bucle, no se recarga
+      if (current && it.solo && it.vid && current.it.key === it.key) { scheduleNext(slideMs(it)); return; }
+      try { loaded = await loadMedia(it); } catch (e) { console.warn(e); loaded = null; }
+    }
+    if (my !== gen || id !== activeId) { if (loaded) disposeLayer({ layer: document.createElement("div"), ...loaded }); return; }
+    if (!loaded) { renderError(); return; }
+    hideCenter();
+    const { el, url } = loaded, isVid = el.tagName === "VIDEO", fit = decideFit(it, el);
+    const layer = document.createElement("div"); layer.className = "layer " + fit;
+    const bg = document.createElement("div"); bg.className = "bg"; layer.appendChild(bg);
+    if (!isVid) bg.style.backgroundImage = `url("${el.src.replace(/"/g, "%22")}")`;
+    else thumbUrl({ f: it.key, t: "v" }).then(u => { bg.style.backgroundImage = `url("${u}")`; }).catch(() => {});
+    const kb = document.createElement("div"); kb.className = "kb"; kb.appendChild(el); layer.appendChild(kb);
+    const seqAnims = [];
+    if (loaded.extra && loaded.extra.length) {
+      // cada foto siguiente aparece de a poco sobre la anterior: día → atardecer → noche
+      const n = loaded.extra.length + 1, seg = slideMs(it) / n;
+      loaded.extra.forEach((im, i) => {
+        im.style.opacity = "0"; kb.appendChild(im);
+        if (im.animate) seqAnims.push(im.animate([{ opacity: 0 }, { opacity: 1 }], { delay: (i + 1) * seg - 0.65 * seg, duration: 0.65 * seg, easing: "ease-in-out", fill: "both" }));
+        else im.style.opacity = "1";
+      });
+    }
+    stage.appendChild(layer);
+    const fx = transitionFx(S.trans);
+    const kbAnim = isVid ? null : kenBurns(kb, slideMs(it) + S.tdur * 2000 + 1000);
+    if (isVid && !paused) playVideo(el, S.tdur * 1000);
+    const inA = layer.animate ? layer.animate(fx.inn[0], { duration: fx.inn[1], delay: fx.inn[2] || 0, easing: fx.e, fill: "both" }) : null;
+    const prev = current;
+    if (prev) {
+      if (prev.el && prev.el.tagName === "VIDEO") rampVolume(prev.el, 0, fx.out[1]);
+      const outA = prev.layer.animate ? prev.layer.animate(fx.out[0], { duration: fx.out[1], easing: fx.e, fill: "forwards" }) : null;
+      const kill = () => disposeLayer(prev);
+      if (outA) outA.onfinish = kill; else kill();
+    }
+    current = { layer, kbAnim, url, it, el, seqAnims };
+    renderTabs(); updateFav();
+    if (paused) { kbAnim && kbAnim.pause(); seqAnims.forEach(a => a.pause()); }
+    showPie(it);
+    scheduleNext(slideMs(it) + (inA ? fx.inn[1] + (fx.inn[2] || 0) : 0));
+  } finally { if (my === gen) busy = false; }
+}
+let rafP;
+// cuánto queda en pantalla: fotos según "Tiempo por imagen", videos según "Tiempo por video" (0 = sin límite)
+const slideMs = it => it && it.vid ? (+S.vdur ? +S.vdur * 60000 : Infinity) : it && it.seq ? +S.dndur * 1000 : S.dur * 1000;
+function scheduleNext(ms) {
+  clearTimeout(timer); remaining = ms; slideStart = performance.now(); runProgress();
+  if (!paused && isFinite(ms)) timer = setTimeout(() => show(1), ms);
+}
+function runProgress() {
+  cancelAnimationFrame(rafP);
+  const bar = $("#progress"), total = remaining, st = slideStart; bar.style.width = "0";
+  if (!isFinite(total)) return;
+  const tick = () => { if (paused) return; const f = Math.min(1, (performance.now() - st) / total); bar.style.width = f * 100 + "%"; if (f < 1) rafP = requestAnimationFrame(tick); };
+  if (!paused) rafP = requestAnimationFrame(tick);
+}
+function setPaused(p) {
+  paused = p; store.set("paused", p);
+  $("#pausebadge").hidden = !p;
+  $("#btnPlay").setAttribute("aria-label", p ? "Reanudar" : "Pausar");
+  $("#playIcon").innerHTML = p ? '<path d="M8 5.5v13l11-6.5z" fill="currentColor"/>' : '<path d="M9 6v12M15 6v12"/>';
+  if (!current) return;
+  const vid = current.el && current.el.tagName === "VIDEO" ? current.el : null;
+  if (p) { clearTimeout(timer); remaining = Math.max(1500, remaining - (performance.now() - slideStart)); current.kbAnim && current.kbAnim.pause(); (current.seqAnims || []).forEach(a => a.pause()); vid && vid.pause(); cancelAnimationFrame(rafP); }
+  else { current.kbAnim && current.kbAnim.play(); (current.seqAnims || []).forEach(a => a.play()); vid && playVideo(vid, 600); slideStart = performance.now(); if (isFinite(remaining)) timer = setTimeout(() => show(1), remaining); $("#progress").style.width = "0"; }
+}
+
+// aplica el encuadre a lo que está en pantalla (al cambiar el ajuste o girar el aparato)
+function refit() { if (current && current.el) current.layer.className = "layer " + decideFit(current.it, current.el); }
+addEventListener("resize", refit);
+
+/* ---------------- pie de foto (Estilo A) ---------------- */
+let pieT;
+function applyPieSize() { document.documentElement.style.setProperty("--pie-size", S.pieSize + "vh"); }
+function fitPie() {
+  // si el texto no entra a lo ancho, se achica la letra en vez de cortarlo
+  const box = $("#pie"); box.style.fontSize = "";
+  const base = parseFloat(getComputedStyle(box).fontSize); let size = base;
+  while (box.scrollWidth > box.clientWidth + 1 && size > base * 0.55) { size -= 1; box.style.fontSize = size + "px"; }
+}
+function showPie(it) {
+  const box = $("#pie"); clearTimeout(pieT);
+  const text = it && it.caption;
+  if (S.pie === "never" || !text) { box.classList.add("off"); return; }
+  box.classList.add("off");
+  setTimeout(() => {
+    $("#pieText").textContent = text; box.classList.remove("off"); fitPie();
+    if (S.pie === "change") pieT = setTimeout(() => box.classList.add("off"), 9000);
+  }, Math.min(1200, S.tdur * 500));
+}
+addEventListener("resize", () => { if (!$("#pie").classList.contains("off")) fitPie(); });
+
+/* ---------------- pantallas centrales ---------------- */
+const center = $("#center");
+function hideCenter() { center.innerHTML = ""; }
+function showLoading(txt) { center.innerHTML = `<div class="card"><div class="spinner"></div><p style="margin:0">${esc(txt)}</p></div>`; }
+function renderError() {
+  if (current) { disposeLayer(current); current = null; }
+  const c = getColl(activeId);
+  center.innerHTML = c && c.net
+    ? `<div class="card"><h3>Sin conexión</h3><p>No pude traer imágenes de ${esc(c.nombre.toLowerCase())}. Revisá la conexión del aparato y probá de nuevo.</p><div class="row"><button class="btn primary" data-act="retry">Reintentar</button></div></div>`
+    : `<div class="card"><h3>No pude abrir las fotos</h3><p>Puede ser la conexión, o que los archivos todavía se estén publicando en GitHub. Probá de nuevo en un par de minutos.</p><div class="row"><button class="btn primary" data-act="reload">Reintentar</button></div></div>`;
+}
+function showUnlock(msg) {
+  center.innerHTML = `<form class="card" id="unlock"><h3>Tus fotos</h3><p>Ingresá la contraseña con la que cifraste las fotos. Queda guardada en este aparato.</p>
+    <input class="pw" type="password" id="pw" autocomplete="current-password" aria-label="Contraseña">
+    <div class="err" id="pwErr">${msg ? esc(msg) : ""}</div>
+    <div class="row"><button class="btn primary" type="submit" id="pwGo">Abrir mis fotos</button><button class="btn" type="button" data-act="net">Solo imágenes de Internet</button></div></form>`;
+  setTimeout(() => $("#pw").focus(), 60);
+}
+center.addEventListener("submit", async e => {
+  e.preventDefault();
+  const pw = $("#pw").value; if (!pw) return;
+  const btn = $("#pwGo"); btn.disabled = true; btn.textContent = "Verificando…"; $("#pwErr").textContent = "";
+  try {
+    const raw = await keyFromPassword(pw), key = await importAes(raw);
+    library = await fetchManifest(key); aesKey = key; store.set("key", b64e(raw));
+    afterLibrary(true);
+  } catch (err) {
+    console.warn(err); btn.disabled = false; btn.textContent = "Abrir mis fotos";
+    $("#pwErr").textContent = "Esa contraseña no abre las fotos. Revisala y probá de nuevo."; $("#pw").select();
+  }
+});
+center.addEventListener("click", e => {
+  const a = e.target.closest("[data-act]"); if (!a) return;
+  if (a.dataset.act === "retry") { delete playlists[activeId]; start(); }
+  if (a.dataset.act === "reload") boot();
+  if (a.dataset.act === "net") { S.inet = true; saveS(); $("#sInet").checked = true; afterLibrary(false); }
+});
+
+/* ---------------- colecciones especiales: favoritas, un día como hoy, submenús ---------------- */
+let favs = new Set(store.get("favs", []));
+const isFav = it => !!it && !!it.key && (it.favCsv || favs.has(it.key));
+function ownItems() {
+  return library ? library.colecciones.flatMap(c => c.fotos.map(p => ({ ...p, m: c.modo, src: c.id }))) : [];
+}
+function favColl() {
+  const fotos = ownItems().filter(p => p.fav || favs.has(p.f));
+  return fotos.length ? { id: "fav", nombre: "Favoritas", modo: "libre", especial: true, fotos } : null;
+}
+function hoyColl() {
+  const now = new Date(), y = now.getFullYear();
+  const dated = ownItems().filter(p => p.d && p.d.length === 10 && +p.d.slice(0, 4) < y);
+  const md = d => `${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  let fotos = dated.filter(p => p.d.slice(5) === md(now)), nombre = "Un día como hoy";
+  if (!fotos.length) {
+    // si ese día exacto no hay fotos, usa la semana (3 días antes y después) de otros años
+    const near = new Set(); for (let k = -3; k <= 3; k++) near.add(md(new Date(now.getTime() + k * 864e5)));
+    fotos = dated.filter(p => near.has(p.d.slice(5))); nombre = "Esta semana, otros años";
+  }
+  return fotos.length ? { id: "hoy", nombre, modo: "lugar_fecha", especial: true, fotos: fotos.map(p => ({ ...p, m: "lugar_fecha" })) } : null;
+}
+function getColl(id) {
+  if (!id) return null;
+  const top = allColls().find(c => c.id === id); if (top) return top;
+  if (id === "fav") return favColl();
+  if (id === "hoy") return hoyColl();
+  const m = /^(.+)\/(\d+)$/.exec(id);
+  if (m && library) {
+    const c = library.colecciones.find(x => x.id === m[1]), g = c && c.grupos && c.grupos[+m[2]];
+    if (g) return { id, nombre: g.n, anio: g.y, modo: c.modo, padre: c, fotos: c.fotos.filter(p => p.g === +m[2]) };
+  }
+  return null;
+}
+
+/* ---------------- menú de colecciones ---------------- */
+const menu = $("#menu");
+let menuOpen = false, autoT = null, autoLeft = 0, menuSub = null;
+const countLabel = c => {
+  if (c.net) return "Desde Internet";
+  const nv = c.fotos.filter(x => x.t === "v").length, nf = c.fotos.length - nv;
+  return [c.anio || "", nf ? `${nf} ${nf === 1 ? "foto" : "fotos"}` : "", nv ? `${nv} ${nv === 1 ? "video" : "videos"}` : ""].filter(Boolean).join(" · ");
+};
+function renderTabs() {
+  const c = getColl(activeId);
+  $("#curName").textContent = c && current ? c.nombre : "Menú";
+  if (menuOpen) renderMenu();
+}
+function menuEntries() {
+  if (menuSub) {
+    const c = library && library.colecciones.find(x => x.id === menuSub);
+    if (c && c.grupos) return [{ ...c, nombre: `Todo ${c.nombre}`, todo: true }, ...c.grupos.map((g, i) => getColl(`${c.id}/${i}`))];
+    menuSub = null;
+  }
+  const own = library ? library.colecciones.filter(c => c.fotos.length) : [];
+  const net = allColls().filter(c => c.net);
+  return [hoyColl(), ...own, favColl(), ...net].filter(Boolean);
+}
+function renderMenu() {
+  const focusedId = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.id : null;
+  const cs = menuEntries();
+  const parent = menuSub && library.colecciones.find(x => x.id === menuSub);
+  $("#mtitle").innerHTML = parent ? `${esc(parent.nombre)}` : 'Marco <i>Vivo</i>';
+  $("#msub").textContent = parent ? "Elegí qué parte ver, o todo junto." : "¿Qué querés ver?";
+  const back = parent ? `<button class="tile back" role="listitem" data-act="back"><span class="tx"><span class="tn">← Volver</span><span class="tc">Todas las colecciones</span></span></button>` : "";
+  $("#grid").innerHTML = back + cs.map(c => {
+    const tag = c.net ? "Internet" : c.id === "hoy" ? new Date().toLocaleDateString("es-AR", { day: "numeric", month: "long" }) : c.grupos && !c.todo ? `${c.grupos.length} grupos` : "";
+    const now = (c.id === activeId || (c.todo && activeId === c.id)) && current;
+    return `<button class="tile${c.net ? " net" : ""}${c.especial ? " special" : ""}" role="listitem" data-id="${esc(c.id)}"${c.grupos && !c.todo ? ' data-sub="1"' : ""}>
+      <span class="cv wait"></span>${tag ? `<span class="tag">${esc(tag)}</span>` : ""}${now ? '<span class="now">Ahora</span>' : ""}
+      <span class="tx"><span class="tn">${c.id === "fav" ? "♥ " : ""}${esc(c.nombre)}</span><span class="tc">${esc(countLabel(c))}</span></span></button>`;
+  }).join("");
+  cs.forEach(c => {
+    const cv = $("#grid").querySelector(`[data-id="${CSS.escape(c.id)}"] .cv`);
+    if (!cv) return;
+    if (c.net || !c.fotos.length) { cv.classList.remove("wait"); return; }
+    // portada: una foto al azar de la colección, distinta cada vez que se abre el menú
+    const pick = c.fotos[Math.random() * c.fotos.length | 0];
+    thumbUrl(pick).then(u => { cv.style.backgroundImage = `url("${u}")`; cv.classList.remove("wait"); })
+      .catch(() => { cv.classList.remove("wait"); });
+  });
+  const pickF = id => id && $("#grid").querySelector(`[data-id="${CSS.escape(id)}"]`);
+  const f = pickF(focusedId) || pickF(activeId) || pickF(activeId && activeId.split("/")[0]) || $("#grid .tile:not(.back)") || $("#grid .tile");
+  f && f.focus({ preventScroll: false });
+}
+function openMenu(auto) {
+  if (!menuEntries().length) return;
+  menuOpen = true; menu.hidden = false; document.body.classList.add("menu-open"); closePanel(); hideCenter();
+  if (current && current.el && current.el.tagName === "VIDEO") current.el.muted = true;
+  renderMenu(); tickClock();
+  stopAuto();
+  // al abrir la app: si nadie elige, sigue sola con la última colección (útil para el portarretrato)
+  const last = getColl(activeId);
+  if (auto && last && !current) {
+    autoLeft = 20;
+    const upd = () => { $("#mhint").textContent = `Si no elegís nada, en ${autoLeft} s sigue ${last.nombre}.`; };
+    upd(); autoT = setInterval(() => { if (--autoLeft <= 0) { stopAuto(); choose(last.id); } else upd(); }, 1000);
+  } else $("#mhint").textContent = current ? "Atrás para volver a lo que estabas viendo." : "";
+}
+function stopAuto() { if (autoT) { clearInterval(autoT); autoT = null; $("#mhint").textContent = ""; } }
+function closeMenu() {
+  if (menuSub) { menuSub = null; renderMenu(); return true; }
+  if (!current) return false;
+  menuOpen = false; menu.hidden = true; document.body.classList.remove("menu-open"); stopAuto();
+  if (current.el && current.el.tagName === "VIDEO" && S.vsound && !paused) { current.el.muted = false; current.el.volume = 1; }
+  return true;
+}
+function choose(id) {
+  menuOpen = false; menu.hidden = true; document.body.classList.remove("menu-open"); stopAuto(); menuSub = null;
+  if (id === activeId && current) { if (current.el && current.el.tagName === "VIDEO" && S.vsound) { current.el.muted = false; current.el.volume = 1; } renderTabs(); return; }
+  activeId = id; store.set("active", id);
+  delete playlists[id];
+  if (paused) setPaused(false);
+  start(); renderTabs();
+}
+$("#grid").addEventListener("click", e => {
+  const t = e.target.closest(".tile"); if (!t) return;
+  if (t.dataset.act === "back") { menuSub = null; renderMenu(); return; }
+  if (t.dataset.sub) { menuSub = t.dataset.id; renderMenu(); return; }
+  choose(t.dataset.id);
+});
+$("#btnMenu").onclick = () => openMenu(false);
+$("#btnMenuSettings").onclick = () => { stopAuto(); openPanel(); };
+["pointerdown", "keydown", "wheel", "touchstart"].forEach(ev => menu.addEventListener(ev, stopAuto, { passive: true }));
+// moverse por la grilla con las flechas del control: busca el mosaico más cercano en esa dirección
+function moveFocus(dir) {
+  const tiles = [...$("#grid").querySelectorAll(".tile")]; if (!tiles.length) return;
+  const cur = tiles.includes(document.activeElement) ? document.activeElement : null;
+  if (!cur) { tiles[0].focus(); return; }
+  const r = cur.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  let best = null, bestD = Infinity;
+  for (const t of tiles) {
+    if (t === cur) continue;
+    const q = t.getBoundingClientRect(), x = q.left + q.width / 2 - cx, y = q.top + q.height / 2 - cy;
+    const ok = dir === "ArrowRight" ? x > 5 : dir === "ArrowLeft" ? x < -5 : dir === "ArrowDown" ? y > 5 : y < -5;
+    if (!ok) continue;
+    const main = dir === "ArrowRight" || dir === "ArrowLeft" ? Math.abs(x) : Math.abs(y);
+    const side = dir === "ArrowRight" || dir === "ArrowLeft" ? Math.abs(y) : Math.abs(x);
+    const d = main + side * 2.5;
+    if (d < bestD) { bestD = d; best = t; }
+  }
+  if (!best && (dir === "ArrowDown" || dir === "ArrowUp")) { const btn = $("#btnMenuSettings"); if (dir === "ArrowDown") { btn.focus(); return; } }
+  if (best) { best.focus(); best.scrollIntoView({ block: "nearest" }); }
+}
+
+function switchTo(id) { if (id === activeId) return; activeId = id; store.set("active", id); renderTabs(); start(); }
+function start() {
+  gen++; busy = false; clearTimeout(timer);
+  const c = getColl(activeId);
+  if (!c) return;
+  if (!current) showLoading(c.net ? `Buscando ${c.nombre.toLowerCase()}…` : "Abriendo tus fotos…");
+  show(1);
+}
+function afterLibrary(fresh, keepPlaying) {
+  const cs = allColls();
+  if (!getColl(activeId)) activeId = cs[0].id;
+  store.set("active", activeId);
+  if (fresh) { playlists = {}; blobCache.clear(); }
+  updateLibInfo();
+  if (keepPlaying) { renderTabs(); start(); return; }
+  if (current) { disposeLayer(current); current = null; }
+  hideCenter(); openMenu(true); renderTabs();
+}
+function updateLibInfo() {
+  $("#libInfo").textContent = library
+    ? library.colecciones.filter(c => c.fotos.length).map(c => `${c.nombre}: ${c.fotos.length}`).join(" · ") + `. Última actualización: ${library.generado}.`
+    : "Este aparato todavía no tiene la contraseña de tus fotos.";
+  $("#btnForget").hidden = !library;
+}
+
+/* ---------------- arranque ---------------- */
+async function boot() {
+  showLoading("Abriendo Marco Vivo…");
+  libCfg = await loadConfig();
+  if (!libCfg) { library = null; afterLibrary(false); return; }
+  const saved = store.get("key", null);
+  if (!saved) { renderTabs(); showUnlock(); return; }
+  try {
+    aesKey = await importAes(b64d(saved));
+    library = await fetchManifest(aesKey);
+    afterLibrary(true);
+  } catch (e) {
+    console.warn(e);
+    if (e && e.name === "OperationError") { store.del("key"); showUnlock("La contraseña cambió. Ingresá la nueva."); }
+    else renderError();
+  }
+}
+// cada 3 horas busca fotos nuevas sin interrumpir lo que se está viendo
+async function refreshLibrary(manual) {
+  if (!aesKey) { if (manual) boot(); return; }
+  try {
+    const m = await fetchManifest(aesKey);
+    if (!library || m.generado !== library.generado) {
+      library = m; playlists = {};
+      if (!getColl(activeId)) { afterLibrary(true, true); }
+      else { renderTabs(); updateLibInfo(); }
+      manual && toast("Fotos actualizadas.");
+    } else if (manual) toast("No hay fotos nuevas.");
+  } catch (e) { manual && toast("No pude revisar si hay fotos nuevas."); }
+}
+setInterval(() => refreshLibrary(false), 3 * 3600 * 1000);
+
+/* ---------------- panel de ajustes ---------------- */
+const panel = $("#panel");
+function openPanel() { panel.classList.add("open"); panel.setAttribute("aria-hidden", "false"); updateLibInfo(); setTimeout(() => $("#btnClose").focus(), 50); }
+function closePanel() {
+  const was = panel.classList.contains("open");
+  panel.classList.remove("open"); panel.setAttribute("aria-hidden", "true");
+  if (was && menuOpen) { const t = $("#grid .tile"); t && t.focus(); }
+}
+$("#btnSettings").onclick = openPanel; $("#btnClose").onclick = closePanel;
+$("#btnReload").onclick = () => refreshLibrary(true);
+let forgetArmed = false;
+$("#btnForget").onclick = () => {
+  const b = $("#btnForget");
+  if (!forgetArmed) { forgetArmed = true; b.textContent = "Tocá de nuevo para confirmar"; setTimeout(() => { forgetArmed = false; b.textContent = "Olvidar la contraseña en este aparato"; }, 4000); return; }
+  store.del("key"); aesKey = null; library = null; blobCache.clear(); closePanel(); forgetArmed = false; b.textContent = "Olvidar la contraseña en este aparato";
+  if (current) { disposeLayer(current); current = null; }
+  menuOpen = false; menu.hidden = true; document.body.classList.remove("menu-open"); stopAuto();
+  boot();
+};
+
+function bindSettings() {
+  const bind = (sel, key, fmt, cast = v => v) => {
+    const el = $(sel), out = el.closest(".field").querySelector("output");
+    if (el.type === "checkbox") el.checked = S[key]; else el.value = S[key];
+    const upd = () => { S[key] = el.type === "checkbox" ? el.checked : cast(el.value); saveS(); out && fmt && (out.textContent = fmt(S[key])); onSetting(key); };
+    el.addEventListener(el.type === "range" ? "input" : "change", upd); out && fmt && (out.textContent = fmt(S[key]));
+  };
+  const secs = v => v >= 60 ? (v % 60 ? `${Math.floor(v / 60)} min ${v % 60} s` : `${v / 60} min`) : `${v} s`;
+  bind("#sDur", "dur", secs, Number); bind("#sTrans", "trans"); bind("#sTDur", "tdur", v => `${String(v).replace(".", ",")} s`, Number);
+  bind("#sKB", "kb"); bind("#sFit", "fit"); bind("#sOrder", "order"); bind("#sPie", "pie"); bind("#sPieSize", "pieSize");
+  bind("#sClock", "clock"); bind("#sInet", "inet"); bind("#sQual", "qual");
+  bind("#sVDur", "vdur"); bind("#sVSound", "vsound"); bind("#sDN", "dndur");
+  const hours = [...Array(24)].map((_, h) => `<option value="${h}">${String(h).padStart(2, "0")}:00</option>`).join("");
+  $("#sNFrom").innerHTML = hours; $("#sNTo").innerHTML = hours;
+  bind("#sNMode", "nmode"); bind("#sNFrom", "nfrom"); bind("#sNTo", "nto");
+}
+function onSetting(k) {
+  if (k === "clock") $("#clock").hidden = !S.clock;
+  if (k === "nmode" || k === "nfrom" || k === "nto") { nightWakeUntil = 0; nightTick(); }
+  if (k === "fit") refit();
+  if (k === "pie") showPie(current && current.it);
+  if (k === "pieSize") { applyPieSize(); fitPie(); }
+  if (k === "order") Object.values(playlists).forEach(p => p.reset());
+  if (k === "qual") INTERNET.forEach(c => delete playlists[c.id]);
+  if (k === "inet") { const had = !!getColl(activeId); renderTabs(); if (!had && allColls().length) { activeId = allColls()[0].id; renderTabs(); if (!menuOpen) start(); } }
+  const vid = current && current.el && current.el.tagName === "VIDEO" ? current.el : null;
+  if (k === "dur" && current && !vid && !paused) scheduleNext(slideMs(current.it));
+  if (k === "vdur" && vid && !paused) scheduleNext(slideMs(current.it));
+  if (k === "vsound" && vid && !paused && !menuOpen) playVideo(vid, 800);
+}
+
+/* ---------------- reloj ---------------- */
+function tickClock() {
+  const d = new Date();
+  $("#ct").textContent = d.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+  $("#cd").textContent = d.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" });
+  $("#mt").textContent = $("#ct").textContent; $("#md").textContent = $("#cd").textContent;
+}
+setInterval(tickClock, 15000); tickClock();
+
+/* ---------------- interfaz que se oculta sola ---------------- */
+let idleT;
+function poke() { document.body.classList.remove("idle"); clearTimeout(idleT); idleT = setTimeout(() => { if (!panel.classList.contains("open") && !$("#unlock")) document.body.classList.add("idle"); }, 4000); }
+["mousemove", "pointerdown", "touchstart"].forEach(ev => addEventListener(ev, poke, { passive: true }));
+
+let tx0 = null, ty0 = 0;
+stage.addEventListener("pointerdown", e => { tx0 = e.clientX; ty0 = e.clientY; });
+stage.addEventListener("pointerup", e => {
+  if (tx0 == null) return; const dx = e.clientX - tx0, dy = e.clientY - ty0; tx0 = null;
+  if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) { show(dx < 0 ? 1 : -1); return; }
+  if (panel.classList.contains("open")) closePanel();
+});
+stage.addEventListener("dblclick", () => setPaused(!paused));
+$("#btnPrev").onclick = () => show(-1);
+$("#btnNext").onclick = () => show(1);
+$("#btnPlay").onclick = () => setPaused(!paused);
+
+async function toggleFull() {
+  try {
+    if (!document.fullscreenElement) await (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen).call(document.documentElement);
+    else await document.exitFullscreen();
+  } catch { toast("Usá la opción de pantalla completa del navegador."); }
+}
+$("#btnFull").onclick = toggleFull;
+let lock = null;
+async function wake() { try { if ("wakeLock" in navigator && !lock) { lock = await navigator.wakeLock.request("screen"); lock.addEventListener("release", () => lock = null); } } catch {} }
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") wake(); });
+["pointerdown", "keydown"].forEach(ev => addEventListener(ev, wake));
+
+/* teclado y control remoto (Samsung: Atrás = 10009) */
+let okTimer = null, okLong = false;
+const COLOR_KEYS = new Set([403, 404, 405, 406]);   // rojo, verde, amarillo, azul del control
+addEventListener("keydown", e => {
+  if (nightActive && nightWake()) { e.preventDefault(); return; }
+  poke();
+  const k = e.key, code = e.keyCode, inPanel = panel.classList.contains("open");
+  const isBack = k === "Escape" || k === "GoBack" || k === "BrowserBack" || code === 10009 || code === 461 || (k === "Backspace" && !/INPUT/.test(e.target.tagName));
+  if ($("#unlock")) return;
+  if (isBack) {
+    e.preventDefault();
+    if (inPanel) { closePanel(); if (menuOpen) renderMenu(); }
+    else if (menuOpen) closeMenu();
+    else openMenu(false);
+    return;
+  }
+  if (menuOpen && !inPanel) {
+    if (/^Arrow/.test(k)) { e.preventDefault(); moveFocus(k); return; }
+    if (k === "s" || k === "S" || k === "ContextMenu") { e.preventDefault(); openPanel(); }
+    return;
+  }
+  if (inPanel) {
+    if (k === "ArrowDown" || k === "ArrowUp") {
+      const f = [...panel.querySelectorAll("button,select,input")].filter(x => x.offsetParent);
+      const i = f.indexOf(document.activeElement), n = f[(i + (k === "ArrowDown" ? 1 : -1) + f.length) % f.length];
+      if (n) { e.preventDefault(); n.focus(); n.scrollIntoView({ block: "nearest" }); }
+    }
+    return;
+  }
+  if (e.target.closest && e.target.closest("#top,#controls") && (k === "Enter" || k === " ")) return;
+  if (COLOR_KEYS.has(code) || k === "ColorF2Yellow" || k === "h" || k === "H") { e.preventDefault(); toggleFav(); return; }
+  if (k === "Enter" || k === " ") {
+    // OK corto: pausa. OK sostenido (0,7 s): marca favorita.
+    e.preventDefault();
+    if (!e.repeat && !okTimer) { okLong = false; okTimer = setTimeout(() => { okLong = true; okTimer = null; toggleFav(); }, 700); }
+    return;
+  }
+  switch (k) {
+    case "ArrowRight": case "MediaTrackNext": e.preventDefault(); show(1); break;
+    case "ArrowLeft": case "MediaTrackPrevious": e.preventDefault(); show(-1); break;
+    case "MediaPlayPause": case "MediaPlay": case "MediaPause": e.preventDefault(); setPaused(!paused); break;
+    case "ArrowUp": case "ArrowDown": e.preventDefault(); openMenu(false); break;
+    case "s": case "S": case "ContextMenu": e.preventDefault(); openPanel(); break;
+    case "f": case "F": toggleFull(); break;
+  }
+});
+
+addEventListener("keyup", e => {
+  if (e.key !== "Enter" && e.key !== " ") return;
+  if (okTimer) { clearTimeout(okTimer); okTimer = null; if (!okLong && !menuOpen && !panel.classList.contains("open") && !$("#unlock")) setPaused(!paused); }
+  okLong = false;
+});
+
+/* ---------------- favoritas ---------------- */
+function updateFav() {
+  const it = current && current.it, on = isFav(it);
+  $("#btnFav").setAttribute("aria-pressed", on ? "true" : "false");
+  $("#btnFav").hidden = !(it && it.key);
+  $("#favMark").hidden = !on;
+  $("#btnFavClear").hidden = !favs.size;
+}
+function toggleFav() {
+  const it = current && current.it;
+  if (!it || !it.key) { toast("Solo se pueden marcar tus propias fotos y videos."); return; }
+  if (it.favCsv) { toast("Esta favorita viene de pies.csv; se quita desde ahí."); return; }
+  if (favs.has(it.key)) { favs.delete(it.key); toast("Quitada de Favoritas."); }
+  else { favs.add(it.key); toast("♥ Agregada a Favoritas."); }
+  store.set("favs", [...favs]); delete playlists.fav; updateFav();
+  if (!pieVisible()) showPie(it);
+}
+const pieVisible = () => !$("#pie").classList.contains("off");
+$("#btnFav").onclick = toggleFav;
+$("#btnFavClear").onclick = () => { favs.clear(); store.set("favs", []); delete playlists.fav; updateFav(); toast("Listo: este aparato ya no tiene favoritas propias."); };
+
+/* ---------------- horario nocturno ---------------- */
+let nightActive = false, nightWakeUntil = 0, nightTestUntil = 0, preNightId = null;
+function inNightHours(d = new Date()) {
+  if (S.nmode === "off") return false;
+  const h = d.getHours(), a = +S.nfrom, b = +S.nto;
+  return a === b ? false : a < b ? h >= a && h < b : h >= a || h < b;
+}
+function nightTick() {
+  const want = Date.now() < nightTestUntil || (inNightHours() && Date.now() > nightWakeUntil);
+  if (want === nightActive) return;
+  nightActive = want;
+  const mode = Date.now() < nightTestUntil && S.nmode === "off" ? "black" : S.nmode, ov = $("#night");
+  if (want) {
+    if (mode === "videos") {
+      const v = library && library.colecciones.find(c => c.id === "videos" && c.fotos.length);
+      if (v && activeId !== "videos") { preNightId = activeId; store.set("preNight", preNightId); choose("videos"); }
+      return;
+    }
+    ov.className = mode === "dim" ? "dim" : ""; ov.hidden = false;
+    requestAnimationFrame(() => ov.classList.add("on"));
+    if (mode === "black" && !paused) { store.set("nightPaused", true); setPaused(true); }
+  } else {
+    ov.classList.remove("on"); setTimeout(() => { if (!nightActive) ov.hidden = true; }, 2600);
+    if (store.get("nightPaused", false)) { store.set("nightPaused", false); setPaused(false); }
+    const back = preNightId || store.get("preNight", null);
+    if (back && activeId === "videos" && getColl(back)) { preNightId = null; store.set("preNight", null); choose(back); }
+  }
+}
+function nightWake() {
+  if (!nightActive || S.nmode === "videos") return false;
+  nightWakeUntil = Date.now() + 10 * 60 * 1000; nightTestUntil = 0; nightTick(); poke();
+  return true;
+}
+$("#night").addEventListener("pointerdown", e => { e.preventDefault(); nightWake(); });
+$("#btnNightTest").onclick = () => { closePanel(); nightWakeUntil = 0; nightTestUntil = Date.now() + 15000; nightTick(); setTimeout(nightTick, 15200); };
+setInterval(nightTick, 30000);
+
+/* ---------------- instalar como app (tablet) ---------------- */
+let installEvt = null;
+addEventListener("beforeinstallprompt", e => { e.preventDefault(); installEvt = e; $("#btnInstall").hidden = false; });
+$("#btnInstall").onclick = async () => {
+  if (!installEvt) return;
+  installEvt.prompt(); try { await installEvt.userChoice; } catch {}
+  installEvt = null; $("#btnInstall").hidden = true;
+};
+addEventListener("appinstalled", () => { $("#installInfo").textContent = "Marco Vivo ya está instalado en este aparato."; $("#btnInstall").hidden = true; });
+if (matchMedia("(display-mode: fullscreen), (display-mode: standalone)").matches) $("#installInfo").textContent = "Estás usando Marco Vivo instalado como app.";
+if ("serviceWorker" in navigator && location.protocol === "https:") {
+  addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(() => {}); });
+}
+
+let toastT;
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.remove("off"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.add("off"), 3000); }
+
+bindSettings(); applyPieSize();
+$("#clock").hidden = !S.clock;
+setPaused(paused);
+poke(); boot();
+setTimeout(nightTick, 1500);
+})();
+</script>
+</body>
+</html>
