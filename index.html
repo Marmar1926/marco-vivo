@@ -149,7 +149,29 @@ body.idle #pausebadge{top:calc(18px + env(safe-area-inset-top,0px));opacity:.7}
 #toast{position:fixed;left:50%;top:calc(80px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:var(--glass);border:1px solid var(--line);padding:10px 16px;border-radius:10px;z-index:20;transition:opacity .3s;max-width:calc(100% - 32px)}
 #toast.off{opacity:0;pointer-events:none}
 
-@media (max-width:640px){ #top .brand{display:none} .mclock{display:none} }
+/* Mini mapa del lugar */
+#minimap{position:fixed;left:max(calc(var(--pie-size) * 1.2),env(safe-area-inset-left,0px));bottom:calc(var(--pie-size) * 1.2 + env(safe-area-inset-bottom,0px));width:clamp(150px,19vh,300px);aspect-ratio:4/3;border-radius:12px;overflow:hidden;z-index:4;pointer-events:none;background:#1b1b1b;box-shadow:0 8px 30px rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.18);opacity:.88;transition:opacity .9s ease,bottom .45s ease}
+#minimap.off{opacity:0}
+#minimap .tiles{position:absolute;left:50%;top:50%}
+#minimap .tiles img{position:absolute;width:256px;height:256px;max-width:none}
+#minimap .pin{position:absolute;left:50%;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--brass);box-shadow:0 0 0 3px rgba(214,167,92,.35),0 0 0 9px rgba(214,167,92,.15)}
+#minimap .attr{position:absolute;right:4px;bottom:2px;font-size:8px;color:rgba(255,255,255,.55);font-family:var(--f-ui)}
+body:not(.idle) #minimap{bottom:calc(98px + env(safe-area-inset-bottom,0px))}
+body.menu-open #minimap{opacity:0!important}
+/* Clima junto al reloj */
+.wx{display:block;font-family:var(--f-ui);font-size:.95rem;color:#f3eee6;margin-top:8px;letter-spacing:.02em}
+.wx b{font-family:var(--f-display);font-weight:400;font-size:1.9em;vertical-align:-.12em;margin-right:.25em}
+.mclock .wx{text-align:right;font-size:.85rem}
+.mclock .wx b{font-size:1.5em}
+/* Explorar */
+.msec{grid-column:1/-1;margin:6px 0 -4px;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--brass);font-weight:600}
+.tile.mini{aspect-ratio:16/8}
+#grid.x{grid-template-columns:repeat(auto-fill,minmax(min(100%,clamp(170px,15vw,280px)),1fr))}
+.tile.mini .tn{font-size:clamp(1.2rem,1.7vw,1.8rem)}
+.xsearch{display:flex;gap:10px;align-items:center;margin-top:12px;max-width:560px}
+.xsearch input{flex:1;background:#1f1c19;border:1px solid var(--line);border-radius:10px;padding:11px 14px;font-size:1.05rem}
+.field input[type=text]{background:#1f1c19;border:1px solid var(--line);border-radius:8px;padding:7px 10px;max-width:190px}
+@media (max-width:640px){ #top .brand{display:none} .mclock{display:none} #minimap{width:120px} }
 @media (prefers-reduced-motion:reduce){ .layer,.ui,#pie{transition:none} }
 </style>
 </head>
@@ -159,7 +181,9 @@ body.idle #pausebadge{top:calc(18px + env(safe-area-inset-top,0px));opacity:.7}
 <div id="progress"></div>
 <div id="pie" class="off"><span id="favMark" hidden>♥ </span><span id="pieText"></span></div>
 <div id="night" hidden></div>
-<div id="clock" hidden><span id="ct"></span><small id="cd"></small></div>
+<div id="clock" hidden><span id="ct"></span><small id="cd"></small><span class="wx" id="cw"></span></div>
+<div id="minimap" class="off" aria-hidden="true"><div class="tiles"></div><div class="pin"></div><span class="attr">© OpenStreetMap · CARTO</span></div>
+<audio id="music" preload="auto" hidden></audio>
 <div id="pausebadge" hidden>En pausa</div>
 <div id="center"></div>
 
@@ -183,7 +207,7 @@ body.idle #pausebadge{top:calc(18px + env(safe-area-inset-top,0px));opacity:.7}
 <section id="menu" aria-label="Menú de colecciones" hidden>
   <header class="mhead">
     <div><div class="brand" id="mtitle">Marco <i>Vivo</i></div><p id="msub">¿Qué querés ver?</p></div>
-    <div class="mclock"><span id="mt"></span><small id="md"></small></div>
+    <div class="mclock"><span id="mt"></span><small id="md"></small><span class="wx" id="mw"></span></div>
   </header>
   <div id="grid" role="list"></div>
   <footer class="mfoot">
@@ -204,8 +228,14 @@ body.idle #pausebadge{top:calc(18px + env(safe-area-inset-top,0px));opacity:.7}
     <option value="0">Sin movimiento</option><option value="1">Suave</option><option value="2">Marcado</option></select></div>
   <div class="field"><label for="sFit">Encuadre</label><select id="sFit">
     <option value="auto">Automático</option><option value="cover">Llenar la pantalla</option><option value="contain">Mostrar completa</option></select></div>
+  <div class="field"><label for="sDip">Fotos verticales de a dos</label><input type="checkbox" id="sDip"></div>
   <div class="field"><label for="sOrder">Orden de mis fotos</label><select id="sOrder">
     <option value="random">Aleatorio</option><option value="seq">Por fecha</option></select></div>
+
+  <h4>Música de fondo</h4>
+  <div class="field"><label for="sMusic">Música con las fotos</label><input type="checkbox" id="sMusic"></div>
+  <div class="field"><label for="sMVol">Volumen</label><output id="oMVol"></output><input type="range" id="sMVol" min="5" max="100" step="5"></div>
+  <p class="info" id="musicInfo"></p>
 
   <h4>Videos</h4>
   <div class="field"><label for="sVDur">Tiempo por video</label><select id="sVDur">
@@ -231,7 +261,9 @@ body.idle #pausebadge{top:calc(18px + env(safe-area-inset-top,0px));opacity:.7}
     <option value="1.7">Normal (1,7 %)</option><option value="2.4">Grande</option><option value="3.2">Muy grande</option></select></div>
 
   <h4>Pantalla</h4>
-  <div class="field"><label for="sClock">Mostrar reloj</label><input type="checkbox" id="sClock"></div>
+  <div class="field"><label for="sClock">Reloj y clima en pantalla</label><input type="checkbox" id="sClock"></div>
+  <div class="field"><label for="sCity">Ciudad del clima</label><input type="text" id="sCity" autocomplete="off" spellcheck="false"></div>
+  <div class="field"><label for="sMap">Mapa del lugar</label><input type="checkbox" id="sMap"></div>
   <div class="field"><label for="sInet">Colecciones de Internet en el menú</label><input type="checkbox" id="sInet"></div>
   <div class="field"><label for="sQual">Calidad de Internet</label><select id="sQual">
     <option value="high">Alta (TV 4K)</option><option value="light">Liviana (más rápida)</option></select></div>
@@ -252,7 +284,7 @@ body.idle #pausebadge{top:calc(18px + env(safe-area-inset-top,0px));opacity:.7}
   </div>
 
   <h4>Control remoto y teclado</h4>
-  <p class="keys"><kbd>←</kbd> <kbd>→</kbd> imagen o video anterior / siguiente<br><kbd>OK</kbd> o <kbd>Espacio</kbd> pausar y reanudar<br><kbd>↑</kbd> <kbd>↓</kbd> o <kbd>Atrás</kbd> abrir el menú<br>En el menú: flechas para moverse, <kbd>OK</kbd> para elegir<br>Mantener <kbd>OK</kbd> o tecla amarilla: marcar favorita<br><kbd>S</kbd> ajustes · <kbd>F</kbd> pantalla completa</p>
+  <p class="keys"><kbd>←</kbd> <kbd>→</kbd> imagen o video anterior / siguiente<br><kbd>OK</kbd> o <kbd>Espacio</kbd> pausar y reanudar<br><kbd>↑</kbd> <kbd>↓</kbd> o <kbd>Atrás</kbd> abrir el menú<br>En el menú: flechas para moverse, <kbd>OK</kbd> para elegir<br>Mantener <kbd>OK</kbd> o tecla amarilla: marcar favorita<br><kbd>S</kbd> ajustes · <kbd>F</kbd> pantalla completa · <kbd>M</kbd> música</p>
 </aside>
 
 <div id="toast" class="off" role="status"></div>
@@ -275,8 +307,10 @@ const store = {
 /* ---------------- ajustes ---------------- */
 const DEF = { dur: 25, trans: "fade", tdur: 2.5, kb: matchMedia("(prefers-reduced-motion: reduce)").matches ? "0" : "1",
   fit: "auto", order: "random", pie: "always", pieSize: "1.7", clock: false, inet: true, qual: "high", vdur: "5", vsound: false,
-  dndur: "60", nmode: "off", nfrom: "0", nto: "7" };
+  dndur: "60", nmode: "off", nfrom: "0", nto: "7", dip: true, map: true, music: true, mvol: 35,
+  city: "Mar del Plata", lat: -38.0055, lon: -57.5426 };
 const S = Object.assign({}, DEF, store.get("settings", {}));
+if (!store.get("v2", false)) { S.clock = true; store.set("v2", true); store.set("settings", S); }   // reloj y clima: encendido una vez
 const saveS = () => store.set("settings", S);
 
 /* ---------------- cifrado (AES-256-GCM, clave derivada con PBKDF2-SHA256) ---------------- */
@@ -441,10 +475,28 @@ function makePlaylist(coll) {
         if (!order.length) return null;
         i = (i + dir + order.length) % order.length;
         const p = order[i];
+        // díptico: en pantalla horizontal, una foto vertical se muestra junto a otra vertical del mismo grupo
+        let q = null;
+        if (dir > 0 && wantsPair(p)) {
+          const lim = Math.min(order.length - 1, 40);
+          for (let k = 1; k <= lim && !q; k++) {
+            const j = (i + k) % order.length, c = order[j];
+            if (c !== p && wantsPair(c) && (p.g == null || c.g === p.g)) {
+              q = c; order.splice(j, 1); order.splice(j < i ? i : i + 1, 0, c);
+              if (j < i) i--;
+              i = (i + 1) % order.length;
+            }
+          }
+        }
         const nxt = order[(i + 1) % order.length]; if (nxt && nxt !== p && nxt.t !== "v") (nxt.seq || [nxt.f]).forEach(f => fetchPhoto(f).catch(() => {}));
-        const base = { key: p.f, w: p.w, h: p.h, caption: captionFor(coll, p), fit: "auto", solo: order.length === 1, favCsv: !!p.fav };
+        const base = { key: p.f, w: p.w, h: p.h, caption: captionFor(coll, p), fit: "auto", solo: order.length === 1, favCsv: !!p.fav, c: p.c, ll: p.ll };
         if (p.t === "v") return { ...base, vid: "data/" + p.f + ".mp4" };
         if (p.seq) return { ...base, seq: p.seq };
+        if (q) {
+          const c2 = captionFor(coll, q);
+          return { ...base, fid: p.f, pair: { fid: q.f, c: q.c, ll: q.ll }, c: null, c0: p.c,
+                   caption: c2 && c2 !== base.caption ? [base.caption, c2].filter(Boolean).join("   |   ") : base.caption };
+        }
         return { ...base, fid: p.f };
       }
     };
@@ -465,6 +517,8 @@ function makePlaylist(coll) {
     }
   };
 }
+const isLandscape = () => innerWidth > innerHeight * 1.2;
+const wantsPair = p => S.dip && isLandscape() && p && !p.t && !p.seq && p.h > p.w * 1.08;
 let playlists = {};
 const pl = id => playlists[id] || (playlists[id] = makePlaylist(getColl(id)));
 
@@ -519,15 +573,36 @@ async function loadSeq(it) {
   }))).catch(e => { urls.forEach(u => URL.revokeObjectURL(u)); throw e; });
   return { el: imgs[0], extra: imgs.slice(1), url: urls };
 }
+async function loadDiptych(it) {
+  const [a, b] = await Promise.all([loadImg({ fid: it.fid }), loadImg({ fid: it.pair.fid })]);
+  try {
+    const dpr = window.devicePixelRatio || 1;
+    const H = Math.round(Math.min(2160, Math.max(1080, innerHeight * dpr))), W = Math.round(H * innerWidth / innerHeight);
+    const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+    const g = cv.getContext("2d"), gap = Math.round(W * 0.006), half = (W - gap) / 2;
+    g.fillStyle = "#0b0a09"; g.fillRect(0, 0, W, H);
+    [[a.img, it.c0, 0], [b.img, it.pair.c, half + gap]].forEach(([im, c, x0]) => {
+      const iw = im.naturalWidth, ih = im.naturalHeight, sc = Math.max(half / iw, H / ih);
+      const sw = half / sc, sh = H / sc, fx = c ? c[0] : .5, fy = c ? c[1] : .42;
+      const sx = Math.max(0, Math.min(iw - sw, fx * iw - sw / 2)), sy = Math.max(0, Math.min(ih - sh, fy * ih - sh / 2));
+      g.drawImage(im, sx, sy, sw, sh, x0, 0, half, H);
+    });
+    const blob = await new Promise(r => cv.toBlob(r, "image/jpeg", 0.9));
+    const r = await loadImg({ blob });
+    return { el: r.img, url: r.url };
+  } finally { [a, b].forEach(x => x.url && URL.revokeObjectURL(x.url)); }
+}
 async function loadMedia(it) {
   if (it.vid) return loadVideo(it);
   if (it.seq) return loadSeq(it);
+  if (it.pair) return loadDiptych(it);
   const r = await loadImg(it);
   return { el: r.img, url: r.url };
 }
 async function loadImg(it) {
   let urls, objUrl = null;
-  if (it.fid) { objUrl = URL.createObjectURL(await fetchPhoto(it.fid)); urls = [objUrl]; }
+  if (it.blob) { objUrl = URL.createObjectURL(it.blob); urls = [objUrl]; }
+  else if (it.fid) { objUrl = URL.createObjectURL(await fetchPhoto(it.fid)); urls = [objUrl]; }
   else urls = [it.src, ...(it.fallbacks || [])].filter(Boolean);
   return new Promise((res, rej) => {
     let k = 0; const img = new Image(); img.decoding = "async"; img.alt = it.caption || "";
@@ -537,14 +612,17 @@ async function loadImg(it) {
   });
 }
 function decideFit(it, el) {
+  if (it.pair) return "cover";
   if (S.fit !== "auto") return S.fit;
   if (it.fit === "contain") return "contain";
   const [w, h] = dims(el), ar = w / h, sr = innerWidth / innerHeight;
   return Math.abs(Math.log(ar / sr)) > 0.42 ? "contain" : "cover";
 }
-function kenBurns(el, ms) {
+function kenBurns(el, ms, focus) {
   const lvl = +S.kb; if (!lvl || !el.animate) return null;
-  const z = lvl === 2 ? [1.04, 1.22] : [1.02, 1.10], t = lvl === 2 ? 4 : 2;
+  const z = lvl === 2 ? [1.04, 1.22] : [1.02, 1.10], t = focus ? (lvl === 2 ? 1.5 : .8) : (lvl === 2 ? 4 : 2);
+  // con caras: el acercamiento se hace hacia ellas, sin alejarse del centro de interés
+  el.style.transformOrigin = focus ? `${(focus[0] * 100).toFixed(1)}% ${(focus[1] * 100).toFixed(1)}%` : "";
   const s1 = rand(z[0], z[1]), s2 = rand(z[0], z[1]), zoomIn = Math.random() < .5;
   const a = zoomIn ? Math.min(s1, s2) : Math.max(s1, s2), b = zoomIn ? Math.max(s1, s2) + .03 : Math.min(s1, s2);
   const p = () => `${rand(-t, t).toFixed(2)}%, ${rand(-t, t).toFixed(2)}%`;
@@ -585,6 +663,7 @@ async function show(dir = 1) {
     if (!isVid) bg.style.backgroundImage = `url("${el.src.replace(/"/g, "%22")}")`;
     else thumbUrl({ f: it.key, t: "v" }).then(u => { bg.style.backgroundImage = `url("${u}")`; }).catch(() => {});
     const kb = document.createElement("div"); kb.className = "kb"; kb.appendChild(el); layer.appendChild(kb);
+    if (it.c && !isVid) el.style.objectPosition = `${(it.c[0] * 100).toFixed(1)}% ${(it.c[1] * 100).toFixed(1)}%`;
     const seqAnims = [];
     if (loaded.extra && loaded.extra.length) {
       // cada foto siguiente aparece de a poco sobre la anterior: día → atardecer → noche
@@ -597,7 +676,7 @@ async function show(dir = 1) {
     }
     stage.appendChild(layer);
     const fx = transitionFx(S.trans);
-    const kbAnim = isVid ? null : kenBurns(kb, slideMs(it) + S.tdur * 2000 + 1000);
+    const kbAnim = isVid ? null : kenBurns(kb, slideMs(it) + S.tdur * 2000 + 1000, fit === "cover" ? it.c : null);
     if (isVid && !paused) playVideo(el, S.tdur * 1000);
     const inA = layer.animate ? layer.animate(fx.inn[0], { duration: fx.inn[1], delay: fx.inn[2] || 0, easing: fx.e, fill: "both" }) : null;
     const prev = current;
@@ -610,7 +689,7 @@ async function show(dir = 1) {
     current = { layer, kbAnim, url, it, el, seqAnims };
     renderTabs(); updateFav();
     if (paused) { kbAnim && kbAnim.pause(); seqAnims.forEach(a => a.pause()); }
-    showPie(it);
+    showPie(it); showMap(it); musicFor(id, isVid);
     scheduleNext(slideMs(it) + (inA ? fx.inn[1] + (fx.inn[2] || 0) : 0));
   } finally { if (my === gen) busy = false; }
 }
@@ -635,6 +714,7 @@ function setPaused(p) {
   $("#playIcon").innerHTML = p ? '<path d="M8 5.5v13l11-6.5z" fill="currentColor"/>' : '<path d="M9 6v12M15 6v12"/>';
   if (!current) return;
   const vid = current.el && current.el.tagName === "VIDEO" ? current.el : null;
+  musicFor(activeId, !!vid);
   if (p) { clearTimeout(timer); remaining = Math.max(1500, remaining - (performance.now() - slideStart)); current.kbAnim && current.kbAnim.pause(); (current.seqAnims || []).forEach(a => a.pause()); vid && vid.pause(); cancelAnimationFrame(rafP); }
   else { current.kbAnim && current.kbAnim.play(); (current.seqAnims || []).forEach(a => a.play()); vid && playVideo(vid, 600); slideStart = performance.now(); if (isFinite(remaining)) timer = setTimeout(() => show(1), remaining); $("#progress").style.width = "0"; }
 }
@@ -642,6 +722,8 @@ function setPaused(p) {
 // aplica el encuadre a lo que está en pantalla (al cambiar el ajuste o girar el aparato)
 function refit() { if (current && current.el) current.layer.className = "layer " + decideFit(current.it, current.el); }
 addEventListener("resize", refit);
+let wasLand = isLandscape();
+addEventListener("resize", () => { const l = isLandscape(); if (l !== wasLand) { wasLand = l; Object.values(playlists).forEach(p => p.reset && p.reset()); } });
 
 /* ---------------- pie de foto (Estilo A) ---------------- */
 let pieT;
@@ -663,6 +745,108 @@ function showPie(it) {
   }, Math.min(1200, S.tdur * 500));
 }
 addEventListener("resize", () => { if (!$("#pie").classList.contains("off")) fitPie(); });
+
+/* ---------------- mini mapa (OpenStreetMap / CARTO) ---------------- */
+const MAP_Z = 4;
+let mapKey = "";
+function showMap(it) {
+  const box = $("#minimap"), ll = it && (it.ll || (it.pair && it.pair.ll));
+  if (!S.map || !ll || !navigator.onLine) { box.classList.add("off"); mapKey = ""; return; }
+  const key = ll.join(",");
+  if (key === mapKey) { box.classList.remove("off"); return; }
+  mapKey = key; box.classList.add("off");
+  const n = 2 ** MAP_Z, [lat, lon] = ll, rad = lat * Math.PI / 180;
+  const px = (lon + 180) / 360 * n * 256, py = (1 - Math.log(Math.tan(rad) + 1 / Math.cos(rad)) / Math.PI) / 2 * n * 256;
+  const tx = Math.floor(px / 256), ty = Math.floor(py / 256), r = window.devicePixelRatio > 1 ? "@2x" : "";
+  const tiles = box.querySelector(".tiles"); tiles.innerHTML = "";
+  let pending = 0;
+  for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) {
+    const y = ty + dy; if (y < 0 || y >= n) continue;
+    const x = ((tx + dx) % n + n) % n, im = new Image();
+    im.style.left = ((tx + dx) * 256 - px) + "px"; im.style.top = (y * 256 - py) + "px";
+    pending++; im.onload = im.onerror = () => { if (--pending === 0 && mapKey === key) setTimeout(() => box.classList.remove("off"), 600); };
+    im.src = `https://basemaps.cartocdn.com/dark_all/${MAP_Z}/${x}/${y}${r}.png`;
+    tiles.appendChild(im);
+  }
+}
+
+/* ---------------- clima (Open-Meteo, sin clave) ---------------- */
+const WX = { 0: "Despejado", 1: "Mayormente despejado", 2: "Parcialmente nublado", 3: "Nublado", 45: "Niebla", 48: "Niebla",
+  51: "Llovizna", 53: "Llovizna", 55: "Llovizna", 56: "Llovizna helada", 57: "Llovizna helada", 61: "Lluvia débil", 63: "Lluvia", 65: "Lluvia fuerte",
+  66: "Lluvia helada", 67: "Lluvia helada", 71: "Nieve", 73: "Nieve", 75: "Nieve intensa", 77: "Nieve", 80: "Chaparrones", 81: "Chaparrones", 82: "Chaparrones fuertes",
+  85: "Nevadas", 86: "Nevadas", 95: "Tormenta", 96: "Tormenta con granizo", 99: "Tormenta con granizo" };
+let wxText = store.get("wx", null);
+async function updateWeather() {
+  try {
+    const u = `https://api.open-meteo.com/v1/forecast?latitude=${S.lat}&longitude=${S.lon}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=1`;
+    const d = await getJSON(u), c = d.current, dy = d.daily;
+    wxText = { t: Math.round(c.temperature_2m), s: WX[c.weather_code] || "", mx: Math.round(dy.temperature_2m_max[0]), mn: Math.round(dy.temperature_2m_min[0]), at: Date.now() };
+    store.set("wx", wxText);
+  } catch (e) { console.warn("clima", e); }
+  paintWeather();
+}
+function paintWeather() {
+  const ok = wxText && Date.now() - wxText.at < 6 * 3600e3;
+  const html = ok ? `<b>${wxText.t}°</b>${esc(wxText.s)} · ${esc(S.city)}<br><span style="opacity:.75">Máx ${wxText.mx}° · Mín ${wxText.mn}°</span>` : "";
+  $("#cw").innerHTML = html; $("#mw").innerHTML = html;
+}
+async function setCity(name) {
+  name = name.trim(); if (!name) return;
+  try {
+    const d = await getJSON(`https://geocoding-api.open-meteo.com/v1/search?count=1&language=es&name=${encodeURIComponent(name)}`);
+    const r = d.results && d.results[0]; if (!r) { toast("No encontré esa ciudad."); return; }
+    S.city = r.name; S.lat = r.latitude; S.lon = r.longitude; saveS(); $("#sCity").value = S.city;
+    toast(`Clima de ${r.name}${r.admin1 ? ", " + r.admin1 : ""}.`); updateWeather();
+  } catch { toast("No pude buscar la ciudad (¿hay conexión?)."); }
+}
+setInterval(updateWeather, 30 * 60 * 1000);
+
+/* ---------------- música de fondo ---------------- */
+const audio = $("#music");
+let musicKey = null, musicList = [], musicIdx = 0, musicUrl = null, musicBlocked = false;
+function musicTracks(collId) {
+  const M = library && library.musica; if (!M || !collId) return [];
+  const top = String(collId).split("/")[0];
+  return M[top] || M.general || [];
+}
+function musicFor(collId, isVid) {
+  const tracks = S.music ? musicTracks(collId) : [];
+  const silent = !tracks.length || paused || nightActive || (isVid && S.vsound);
+  if (silent) { fadeAudio(0, 1200, true); return; }
+  const key = tracks.map(t => t.f).join(",");
+  if (key !== musicKey) { musicKey = key; musicList = shuffle(tracks.slice()); musicIdx = 0; playTrack(); }
+  else if (audio.paused) { audio.play().then(() => fadeAudio(S.mvol / 100, 2500)).catch(() => { musicBlocked = true; }); }
+  else fadeAudio(S.mvol / 100, 1200);
+}
+async function playTrack() {
+  const t = musicList[musicIdx % musicList.length]; if (!t) return;
+  try {
+    const plain = await decrypt(await fetchBin("data/" + t.f + ".bin"));
+    if (musicUrl) URL.revokeObjectURL(musicUrl);
+    musicUrl = URL.createObjectURL(new Blob([plain], { type: t.m || "audio/mpeg" }));
+    audio.src = musicUrl; audio.volume = 0;
+    await audio.play(); musicBlocked = false; fadeAudio(S.mvol / 100, 2500);
+  } catch (e) { if (e && e.name === "NotAllowedError") musicBlocked = true; else console.warn("música", e); }
+}
+audio.addEventListener("ended", () => { musicIdx++; playTrack(); });
+function fadeAudio(to, ms, thenPause) {
+  clearInterval(audio._f); const from = audio.volume, t0 = performance.now();
+  audio._f = setInterval(() => {
+    const f = Math.min(1, (performance.now() - t0) / ms);
+    try { audio.volume = Math.max(0, Math.min(1, from + (to - from) * f)); } catch {}
+    if (f >= 1) { clearInterval(audio._f); if (thenPause && to === 0) audio.pause(); }
+  }, 60);
+}
+// los navegadores no dejan sonar nada hasta que se toca la pantalla o el control
+["pointerdown", "keydown"].forEach(ev => addEventListener(ev, () => {
+  if (musicBlocked && current && !menuOpen) { musicBlocked = false; musicFor(activeId, current.el && current.el.tagName === "VIDEO"); }
+}, { passive: true }));
+function updateMusicInfo() {
+  const M = library && library.musica, n = M ? Object.values(M).reduce((a, v) => a + v.length, 0) : 0;
+  $("#musicInfo").textContent = n
+    ? `${n} ${n === 1 ? "tema" : "temas"}: ${Object.keys(M).map(k => k === "general" ? "General" : k[0].toUpperCase() + k.slice(1)).join(", ")}. Cada colección usa su carpeta; si no tiene, la de General. En los videos con sonido la música se calla.`
+    : "Todavía no hay música. Poné archivos MP3 en Fotos/Musica/General (o Fotos/Musica/Familias, Fotos/Musica/Paisajes…) y se suman solos.";
+}
 
 /* ---------------- pantallas centrales ---------------- */
 const center = $("#center");
@@ -724,11 +908,38 @@ function hoyColl() {
   }
   return fotos.length ? { id: "hoy", nombre, modo: "lugar_fecha", especial: true, fotos: fotos.map(p => ({ ...p, m: "lugar_fecha" })) } : null;
 }
+const regionOf = l => { const parts = String(l || "").split(",").map(x => x.trim()).filter(Boolean); return parts[parts.length - 1] || ""; };
+const norm = t => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+function exploreItems() { return ownItems().filter(p => p.m !== "obra" || p.d); }
+function exploreColl(id) {
+  const [, kind, ...rest] = id.split(":"), val = rest.join(":");
+  let fotos = [], nombre = val;
+  if (kind === "y") fotos = exploreItems().filter(p => (p.d || "").slice(0, 4) === val);
+  else if (kind === "p") fotos = exploreItems().filter(p => p.t !== "v" && p.m !== "obra" && regionOf(p.l) === val);
+  else if (kind === "q") {
+    const words = norm(val).split(/\s+/).filter(Boolean);
+    const grp = p => { const c = library.colecciones.find(x => x.id === p.src); return c && c.grupos && p.g != null ? c.grupos[p.g].n + " " + c.grupos[p.g].y : ""; };
+    fotos = ownItems().filter(p => { const h = norm([p.l, p.x, p.d, grp(p)].join(" ")); return words.every(w => h.includes(w)); });
+    nombre = `«${val}»`;
+  }
+  return fotos.length ? { id, nombre, modo: "lugar_fecha", fotos, explorar: true } : null;
+}
+function exploreEntries() {
+  const items = exploreItems(), years = {}, places = {};
+  items.forEach(p => {
+    const y = (p.d || "").slice(0, 4); if (y) years[y] = (years[y] || 0) + 1;
+    const r = p.t !== "v" && p.m !== "obra" && regionOf(p.l); if (r) places[r] = (places[r] || 0) + 1;
+  });
+  const ys = Object.keys(years).sort().reverse().map(y => exploreColl("x:y:" + y));
+  const ps = Object.keys(places).sort((a, b) => places[b] - places[a] || a.localeCompare(b, "es")).map(r => exploreColl("x:p:" + r));
+  return { ys, ps };
+}
 function getColl(id) {
   if (!id) return null;
   const top = allColls().find(c => c.id === id); if (top) return top;
   if (id === "fav") return favColl();
   if (id === "hoy") return hoyColl();
+  if (id.startsWith("x:")) return library ? exploreColl(id) : null;
   const m = /^(.+)\/(\d+)$/.exec(id);
   if (m && library) {
     const c = library.colecciones.find(x => x.id === m[1]), g = c && c.grupos && c.grupos[+m[2]];
@@ -742,6 +953,7 @@ const menu = $("#menu");
 let menuOpen = false, autoT = null, autoLeft = 0, menuSub = null;
 const countLabel = c => {
   if (c.net) return "Desde Internet";
+  if (c.id === "explorar") return "Por año, lugar o búsqueda";
   const nv = c.fotos.filter(x => x.t === "v").length, nf = c.fotos.length - nv;
   return [c.anio || "", nf ? `${nf} ${nf === 1 ? "foto" : "fotos"}` : "", nv ? `${nv} ${nv === 1 ? "video" : "videos"}` : ""].filter(Boolean).join(" · ");
 };
@@ -751,35 +963,68 @@ function renderTabs() {
   if (menuOpen) renderMenu();
 }
 function menuEntries() {
-  if (menuSub) {
+  if (menuSub && menuSub !== "explorar") {
     const c = library && library.colecciones.find(x => x.id === menuSub);
     if (c && c.grupos) return [{ ...c, nombre: `Todo ${c.nombre}`, todo: true }, ...c.grupos.map((g, i) => getColl(`${c.id}/${i}`))];
     menuSub = null;
   }
   const own = library ? library.colecciones.filter(c => c.fotos.length) : [];
   const net = allColls().filter(c => c.net);
-  return [hoyColl(), ...own, favColl(), ...net].filter(Boolean);
+  const ex = library && exploreItems().some(p => p.d || p.l) ? { id: "explorar", nombre: "Explorar", especial: true, fotos: [], explorar: true } : null;
+  return [hoyColl(), ...own, favColl(), ex, ...net].filter(Boolean);
+}
+let xQuery = "";
+function renderExplore() {
+  const { ys, ps } = exploreEntries();
+  $("#mtitle").textContent = "Explorar";
+  $("#msub").innerHTML = `Por año, por lugar, o buscá lo que quieras.<span class="xsearch"><input id="xq" type="search" placeholder="Buscar: Cuba, 2013, Disney…" autocomplete="off" value="${esc(xQuery)}"></span>`;
+  const tile = (c, mini) => `<button class="tile${mini ? " mini" : ""}" role="listitem" data-id="${esc(c.id)}"><span class="cv wait"></span><span class="tx"><span class="tn">${esc(c.nombre)}</span><span class="tc">${esc(countLabel(c))}</span></span></button>`;
+  const q = xQuery.trim() && exploreColl("x:q:" + xQuery.trim());
+  const res = xQuery.trim() ? `<h4 class="msec">Resultado</h4>` + (q ? tile(q) : `<p class="info" style="grid-column:1/-1">No encontré fotos con «${esc(xQuery.trim())}».</p>`) : "";
+  $("#grid").classList.add("x");
+  $("#grid").innerHTML = `<button class="tile back mini" role="listitem" data-act="back"><span class="tx"><span class="tn">← Volver</span><span class="tc">Todas las colecciones</span></span></button>`
+    + res + `<h4 class="msec">Por año</h4>` + ys.map(c => tile(c, true)).join("") + `<h4 class="msec">Por lugar</h4>` + ps.map(c => tile(c, true)).join("");
+  [...(q ? [q] : []), ...ys, ...ps].forEach(c => {
+    const cv = $("#grid").querySelector(`[data-id="${CSS.escape(c.id)}"] .cv`); if (!cv) return;
+    const fotosImg = c.fotos.filter(p => p.t !== "v"), pick = (fotosImg.length ? fotosImg : c.fotos)[Math.random() * (fotosImg.length || c.fotos.length) | 0];
+    thumbUrl(pick).then(u => { cv.style.backgroundImage = `url("${u}")`; cv.classList.remove("wait"); }).catch(() => cv.classList.remove("wait"));
+  });
+  const inp = $("#xq");
+  inp.oninput = () => { xQuery = inp.value; const pos = inp.selectionStart; renderExplore(); const n = $("#xq"); n.focus(); try { n.setSelectionRange(pos, pos); } catch {} };
+  inp.onkeydown = e => {
+    if (e.key === "Enter") { e.preventDefault(); const t = $("#grid .tile:not(.back)"); if (q) choose(q.id); else t && t.focus(); }
+    if (e.key === "ArrowDown") { e.preventDefault(); const t = $("#grid .tile:not(.back)"); t && t.focus(); }
+  };
 }
 function renderMenu() {
   const focusedId = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.id : null;
+  if (menuSub === "explorar") {
+    renderExplore();
+    const f = (focusedId && $("#grid").querySelector(`[data-id="${CSS.escape(focusedId)}"]`)) || (activeId && $("#grid").querySelector(`[data-id="${CSS.escape(activeId)}"]`)) || $("#grid .tile:not(.back)");
+    f && f.focus({ preventScroll: false });
+    return;
+  }
   const cs = menuEntries();
-  const parent = menuSub && library.colecciones.find(x => x.id === menuSub);
+  const parent = menuSub && menuSub !== "explorar" && library.colecciones.find(x => x.id === menuSub);
+  $("#grid").classList.remove("x");
   $("#mtitle").innerHTML = parent ? `${esc(parent.nombre)}` : 'Marco <i>Vivo</i>';
+  $("#msub").innerHTML = "";
   $("#msub").textContent = parent ? "Elegí qué parte ver, o todo junto." : "¿Qué querés ver?";
   const back = parent ? `<button class="tile back" role="listitem" data-act="back"><span class="tx"><span class="tn">← Volver</span><span class="tc">Todas las colecciones</span></span></button>` : "";
   $("#grid").innerHTML = back + cs.map(c => {
-    const tag = c.net ? "Internet" : c.id === "hoy" ? new Date().toLocaleDateString("es-AR", { day: "numeric", month: "long" }) : c.grupos && !c.todo ? `${c.grupos.length} grupos` : "";
-    const now = (c.id === activeId || (c.todo && activeId === c.id)) && current;
-    return `<button class="tile${c.net ? " net" : ""}${c.especial ? " special" : ""}" role="listitem" data-id="${esc(c.id)}"${c.grupos && !c.todo ? ' data-sub="1"' : ""}>
+    const tag = c.id === "explorar" ? "Años y lugares" : c.net ? "Internet" : c.id === "hoy" ? new Date().toLocaleDateString("es-AR", { day: "numeric", month: "long" }) : c.grupos && !c.todo ? `${c.grupos.length} grupos` : "";
+    const now = (c.id === activeId || (c.todo && activeId === c.id) || (c.id === "explorar" && String(activeId).startsWith("x:"))) && current;
+    return `<button class="tile${c.net ? " net" : ""}${c.especial ? " special" : ""}" role="listitem" data-id="${esc(c.id)}"${(c.grupos && !c.todo) || c.id === "explorar" ? ' data-sub="1"' : ""}>
       <span class="cv wait"></span>${tag ? `<span class="tag">${esc(tag)}</span>` : ""}${now ? '<span class="now">Ahora</span>' : ""}
       <span class="tx"><span class="tn">${c.id === "fav" ? "♥ " : ""}${esc(c.nombre)}</span><span class="tc">${esc(countLabel(c))}</span></span></button>`;
   }).join("");
   cs.forEach(c => {
     const cv = $("#grid").querySelector(`[data-id="${CSS.escape(c.id)}"] .cv`);
     if (!cv) return;
-    if (c.net || !c.fotos.length) { cv.classList.remove("wait"); return; }
+    const pool = c.id === "explorar" ? ownItems().filter(p => p.t !== "v" && p.d) : c.fotos;
+    if (c.net || !pool.length) { cv.classList.remove("wait"); return; }
     // portada: una foto al azar de la colección, distinta cada vez que se abre el menú
-    const pick = c.fotos[Math.random() * c.fotos.length | 0];
+    const pick = pool[Math.random() * pool.length | 0];
     thumbUrl(pick).then(u => { cv.style.backgroundImage = `url("${u}")`; cv.classList.remove("wait"); })
       .catch(() => { cv.classList.remove("wait"); });
   });
@@ -791,6 +1036,7 @@ function openMenu(auto) {
   if (!menuEntries().length) return;
   menuOpen = true; menu.hidden = false; document.body.classList.add("menu-open"); closePanel(); hideCenter();
   if (current && current.el && current.el.tagName === "VIDEO") current.el.muted = true;
+  if (!auto && String(activeId).startsWith("x:")) menuSub = "explorar";
   renderMenu(); tickClock();
   stopAuto();
   // al abrir la app: si nadie elige, sigue sola con la última colección (útil para el portarretrato)
@@ -906,7 +1152,7 @@ setInterval(() => refreshLibrary(false), 3 * 3600 * 1000);
 
 /* ---------------- panel de ajustes ---------------- */
 const panel = $("#panel");
-function openPanel() { panel.classList.add("open"); panel.setAttribute("aria-hidden", "false"); updateLibInfo(); setTimeout(() => $("#btnClose").focus(), 50); }
+function openPanel() { panel.classList.add("open"); panel.setAttribute("aria-hidden", "false"); updateLibInfo(); updateMusicInfo(); setTimeout(() => $("#btnClose").focus(), 50); }
 function closePanel() {
   const was = panel.classList.contains("open");
   panel.classList.remove("open"); panel.setAttribute("aria-hidden", "true");
@@ -936,6 +1182,9 @@ function bindSettings() {
   bind("#sKB", "kb"); bind("#sFit", "fit"); bind("#sOrder", "order"); bind("#sPie", "pie"); bind("#sPieSize", "pieSize");
   bind("#sClock", "clock"); bind("#sInet", "inet"); bind("#sQual", "qual");
   bind("#sVDur", "vdur"); bind("#sVSound", "vsound"); bind("#sDN", "dndur");
+  bind("#sDip", "dip"); bind("#sMap", "map"); bind("#sMusic", "music"); bind("#sMVol", "mvol", v => `${v} %`, Number);
+  $("#sCity").value = S.city; $("#sCity").addEventListener("change", e => setCity(e.target.value));
+  $("#sCity").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); e.target.blur(); setCity(e.target.value); } });
   const hours = [...Array(24)].map((_, h) => `<option value="${h}">${String(h).padStart(2, "0")}:00</option>`).join("");
   $("#sNFrom").innerHTML = hours; $("#sNTo").innerHTML = hours;
   bind("#sNMode", "nmode"); bind("#sNFrom", "nfrom"); bind("#sNTo", "nto");
@@ -944,6 +1193,9 @@ function onSetting(k) {
   if (k === "clock") $("#clock").hidden = !S.clock;
   if (k === "nmode" || k === "nfrom" || k === "nto") { nightWakeUntil = 0; nightTick(); }
   if (k === "fit") refit();
+  if (k === "dip") Object.values(playlists).forEach(p => p.reset && p.reset());
+  if (k === "map") showMap(current && current.it);
+  if (k === "music" || k === "mvol" || k === "vsound") { if (current) musicFor(activeId, current.el && current.el.tagName === "VIDEO"); }
   if (k === "pie") showPie(current && current.it);
   if (k === "pieSize") { applyPieSize(); fitPie(); }
   if (k === "order") Object.values(playlists).forEach(p => p.reset());
@@ -961,6 +1213,7 @@ function tickClock() {
   $("#ct").textContent = d.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
   $("#cd").textContent = d.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" });
   $("#mt").textContent = $("#ct").textContent; $("#md").textContent = $("#cd").textContent;
+  paintWeather();
 }
 setInterval(tickClock, 15000); tickClock();
 
@@ -1001,6 +1254,7 @@ addEventListener("keydown", e => {
   poke();
   const k = e.key, code = e.keyCode, inPanel = panel.classList.contains("open");
   const isBack = k === "Escape" || k === "GoBack" || k === "BrowserBack" || code === 10009 || code === 461 || (k === "Backspace" && !/INPUT/.test(e.target.tagName));
+  if (inPanel && e.target.id === "sCity" && !isBack) return;
   if ($("#unlock")) return;
   if (isBack) {
     e.preventDefault();
@@ -1010,6 +1264,11 @@ addEventListener("keydown", e => {
     return;
   }
   if (menuOpen && !inPanel) {
+    if (e.target && e.target.id === "xq") return;               // escribiendo en Explorar
+    if (k === "ArrowUp" && menuSub === "explorar") {
+      const tiles = [...$("#grid").querySelectorAll(".tile")], cur = document.activeElement, r = cur && cur.getBoundingClientRect && cur.getBoundingClientRect();
+      if (r && !tiles.some(t => t !== cur && t.getBoundingClientRect().bottom <= r.top + 5)) { e.preventDefault(); $("#xq").focus(); return; }
+    }
     if (/^Arrow/.test(k)) { e.preventDefault(); moveFocus(k); return; }
     if (k === "s" || k === "S" || k === "ContextMenu") { e.preventDefault(); openPanel(); }
     return;
@@ -1037,6 +1296,7 @@ addEventListener("keydown", e => {
     case "ArrowUp": case "ArrowDown": e.preventDefault(); openMenu(false); break;
     case "s": case "S": case "ContextMenu": e.preventDefault(); openPanel(); break;
     case "f": case "F": toggleFull(); break;
+    case "m": case "M": S.music = !S.music; saveS(); $("#sMusic").checked = S.music; onSetting("music"); toast(S.music ? "Música encendida." : "Música apagada."); break;
   }
 });
 
@@ -1085,7 +1345,7 @@ function nightTick() {
       if (v && activeId !== "videos") { preNightId = activeId; store.set("preNight", preNightId); choose("videos"); }
       return;
     }
-    ov.className = mode === "dim" ? "dim" : ""; ov.hidden = false;
+    ov.className = mode === "dim" ? "dim" : ""; ov.hidden = false; fadeAudio(0, 2500, true);
     requestAnimationFrame(() => ov.classList.add("on"));
     if (mode === "black" && !paused) { store.set("nightPaused", true); setPaused(true); }
   } else {
@@ -1121,7 +1381,7 @@ if ("serviceWorker" in navigator && location.protocol === "https:") {
 let toastT;
 function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.remove("off"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.add("off"), 3000); }
 
-bindSettings(); applyPieSize();
+bindSettings(); applyPieSize(); updateWeather();
 $("#clock").hidden = !S.clock;
 setPaused(paused);
 poke(); boot();

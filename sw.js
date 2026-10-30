@@ -1,5 +1,5 @@
 // Marco Vivo: guarda la app y las últimas fotos vistas para que siga andando sin Wi-Fi.
-const SHELL = "marco-shell-v1", DATA = "marco-data-v1", MAX_FOTOS = 400;
+const SHELL = "marco-shell-v2", DATA = "marco-data-v1", MAX_FOTOS = 400;
 const ARCHIVOS = ["./", "index.html", "manifest.webmanifest", "fonts/DejaVuSans.ttf", "icons/icon-192.png"];
 
 self.addEventListener("install", e => {
