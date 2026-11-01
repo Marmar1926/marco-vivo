@@ -149,15 +149,6 @@ body.idle #pausebadge{top:calc(18px + env(safe-area-inset-top,0px));opacity:.7}
 #toast{position:fixed;left:50%;top:calc(80px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:var(--glass);border:1px solid var(--line);padding:10px 16px;border-radius:10px;z-index:20;transition:opacity .3s;max-width:calc(100% - 32px)}
 #toast.off{opacity:0;pointer-events:none}
 
-/* Mini mapa del lugar */
-#minimap{position:fixed;left:max(calc(var(--pie-size) * 1.2),env(safe-area-inset-left,0px));bottom:calc(var(--pie-size) * 1.2 + env(safe-area-inset-bottom,0px));width:clamp(150px,19vh,300px);aspect-ratio:4/3;border-radius:12px;overflow:hidden;z-index:4;pointer-events:none;background:#1b1b1b;box-shadow:0 8px 30px rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.18);opacity:.88;transition:opacity .9s ease,bottom .45s ease}
-#minimap.off{opacity:0}
-#minimap .tiles{position:absolute;left:50%;top:50%}
-#minimap .tiles img{position:absolute;width:256px;height:256px;max-width:none}
-#minimap .pin{position:absolute;left:50%;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--brass);box-shadow:0 0 0 3px rgba(214,167,92,.35),0 0 0 9px rgba(214,167,92,.15)}
-#minimap .attr{position:absolute;right:4px;bottom:2px;font-size:8px;color:rgba(255,255,255,.55);font-family:var(--f-ui)}
-body:not(.idle) #minimap{bottom:calc(98px + env(safe-area-inset-bottom,0px))}
-body.menu-open #minimap{opacity:0!important}
 /* Clima junto al reloj */
 .wx{display:block;font-family:var(--f-ui);font-size:.95rem;color:#f3eee6;margin-top:8px;letter-spacing:.02em}
 .wx b{font-family:var(--f-display);font-weight:400;font-size:1.9em;vertical-align:-.12em;margin-right:.25em}
@@ -171,7 +162,7 @@ body.menu-open #minimap{opacity:0!important}
 .xsearch{display:flex;gap:10px;align-items:center;margin-top:12px;max-width:560px}
 .xsearch input{flex:1;background:#1f1c19;border:1px solid var(--line);border-radius:10px;padding:11px 14px;font-size:1.05rem}
 .field input[type=text]{background:#1f1c19;border:1px solid var(--line);border-radius:8px;padding:7px 10px;max-width:190px}
-@media (max-width:640px){ #top .brand{display:none} .mclock{display:none} #minimap{width:120px} }
+@media (max-width:640px){ #top .brand{display:none} .mclock{display:none} }
 @media (prefers-reduced-motion:reduce){ .layer,.ui,#pie{transition:none} }
 </style>
 </head>
@@ -182,7 +173,6 @@ body.menu-open #minimap{opacity:0!important}
 <div id="pie" class="off"><span id="favMark" hidden>♥ </span><span id="pieText"></span></div>
 <div id="night" hidden></div>
 <div id="clock" hidden><span id="ct"></span><small id="cd"></small><span class="wx" id="cw"></span></div>
-<div id="minimap" class="off" aria-hidden="true"><div class="tiles"></div><div class="pin"></div><span class="attr">© OpenStreetMap · CARTO</span></div>
 <audio id="music" preload="auto" hidden></audio>
 <div id="pausebadge" hidden>En pausa</div>
 <div id="center"></div>
@@ -263,7 +253,6 @@ body.menu-open #minimap{opacity:0!important}
   <h4>Pantalla</h4>
   <div class="field"><label for="sClock">Reloj y clima en pantalla</label><input type="checkbox" id="sClock"></div>
   <div class="field"><label for="sCity">Ciudad del clima</label><input type="text" id="sCity" autocomplete="off" spellcheck="false"></div>
-  <div class="field"><label for="sMap">Mapa del lugar</label><input type="checkbox" id="sMap"></div>
   <div class="field"><label for="sInet">Colecciones de Internet en el menú</label><input type="checkbox" id="sInet"></div>
   <div class="field"><label for="sQual">Calidad de Internet</label><select id="sQual">
     <option value="high">Alta (TV 4K)</option><option value="light">Liviana (más rápida)</option></select></div>
@@ -307,7 +296,7 @@ const store = {
 /* ---------------- ajustes ---------------- */
 const DEF = { dur: 25, trans: "fade", tdur: 2.5, kb: matchMedia("(prefers-reduced-motion: reduce)").matches ? "0" : "1",
   fit: "auto", order: "random", pie: "always", pieSize: "1.7", clock: false, inet: true, qual: "high", vdur: "5", vsound: false,
-  dndur: "60", nmode: "off", nfrom: "0", nto: "7", dip: true, map: true, music: true, mvol: 35,
+  dndur: "60", nmode: "off", nfrom: "0", nto: "7", dip: true, music: true, mvol: 35,
   city: "Mar del Plata", lat: -38.0055, lon: -57.5426 };
 const S = Object.assign({}, DEF, store.get("settings", {}));
 if (!store.get("v2", false)) { S.clock = true; store.set("v2", true); store.set("settings", S); }   // reloj y clima: encendido una vez
@@ -489,12 +478,12 @@ function makePlaylist(coll) {
           }
         }
         const nxt = order[(i + 1) % order.length]; if (nxt && nxt !== p && nxt.t !== "v") (nxt.seq || [nxt.f]).forEach(f => fetchPhoto(f).catch(() => {}));
-        const base = { key: p.f, w: p.w, h: p.h, caption: captionFor(coll, p), fit: "auto", solo: order.length === 1, favCsv: !!p.fav, c: p.c, ll: p.ll };
+        const base = { key: p.f, w: p.w, h: p.h, caption: captionFor(coll, p), fit: "auto", solo: order.length === 1, favCsv: !!p.fav, c: p.c };
         if (p.t === "v") return { ...base, vid: "data/" + p.f + ".mp4" };
         if (p.seq) return { ...base, seq: p.seq };
         if (q) {
           const c2 = captionFor(coll, q);
-          return { ...base, fid: p.f, pair: { fid: q.f, c: q.c, ll: q.ll }, c: null, c0: p.c,
+          return { ...base, fid: p.f, pair: { fid: q.f, c: q.c }, c: null, c0: p.c,
                    caption: c2 && c2 !== base.caption ? [base.caption, c2].filter(Boolean).join("   |   ") : base.caption };
         }
         return { ...base, fid: p.f };
@@ -689,7 +678,7 @@ async function show(dir = 1) {
     current = { layer, kbAnim, url, it, el, seqAnims };
     renderTabs(); updateFav();
     if (paused) { kbAnim && kbAnim.pause(); seqAnims.forEach(a => a.pause()); }
-    showPie(it); showMap(it); musicFor(id, isVid);
+    showPie(it); musicFor(id, isVid);
     scheduleNext(slideMs(it) + (inA ? fx.inn[1] + (fx.inn[2] || 0) : 0));
   } finally { if (my === gen) busy = false; }
 }
@@ -745,30 +734,6 @@ function showPie(it) {
   }, Math.min(1200, S.tdur * 500));
 }
 addEventListener("resize", () => { if (!$("#pie").classList.contains("off")) fitPie(); });
-
-/* ---------------- mini mapa (OpenStreetMap / CARTO) ---------------- */
-const MAP_Z = 4;
-let mapKey = "";
-function showMap(it) {
-  const box = $("#minimap"), ll = it && (it.ll || (it.pair && it.pair.ll));
-  if (!S.map || !ll || !navigator.onLine) { box.classList.add("off"); mapKey = ""; return; }
-  const key = ll.join(",");
-  if (key === mapKey) { box.classList.remove("off"); return; }
-  mapKey = key; box.classList.add("off");
-  const n = 2 ** MAP_Z, [lat, lon] = ll, rad = lat * Math.PI / 180;
-  const px = (lon + 180) / 360 * n * 256, py = (1 - Math.log(Math.tan(rad) + 1 / Math.cos(rad)) / Math.PI) / 2 * n * 256;
-  const tx = Math.floor(px / 256), ty = Math.floor(py / 256), r = window.devicePixelRatio > 1 ? "@2x" : "";
-  const tiles = box.querySelector(".tiles"); tiles.innerHTML = "";
-  let pending = 0;
-  for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) {
-    const y = ty + dy; if (y < 0 || y >= n) continue;
-    const x = ((tx + dx) % n + n) % n, im = new Image();
-    im.style.left = ((tx + dx) * 256 - px) + "px"; im.style.top = (y * 256 - py) + "px";
-    pending++; im.onload = im.onerror = () => { if (--pending === 0 && mapKey === key) setTimeout(() => box.classList.remove("off"), 600); };
-    im.src = `https://basemaps.cartocdn.com/dark_all/${MAP_Z}/${x}/${y}${r}.png`;
-    tiles.appendChild(im);
-  }
-}
 
 /* ---------------- clima (Open-Meteo, sin clave) ---------------- */
 const WX = { 0: "Despejado", 1: "Mayormente despejado", 2: "Parcialmente nublado", 3: "Nublado", 45: "Niebla", 48: "Niebla",
@@ -1182,7 +1147,7 @@ function bindSettings() {
   bind("#sKB", "kb"); bind("#sFit", "fit"); bind("#sOrder", "order"); bind("#sPie", "pie"); bind("#sPieSize", "pieSize");
   bind("#sClock", "clock"); bind("#sInet", "inet"); bind("#sQual", "qual");
   bind("#sVDur", "vdur"); bind("#sVSound", "vsound"); bind("#sDN", "dndur");
-  bind("#sDip", "dip"); bind("#sMap", "map"); bind("#sMusic", "music"); bind("#sMVol", "mvol", v => `${v} %`, Number);
+  bind("#sDip", "dip"); bind("#sMusic", "music"); bind("#sMVol", "mvol", v => `${v} %`, Number);
   $("#sCity").value = S.city; $("#sCity").addEventListener("change", e => setCity(e.target.value));
   $("#sCity").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); e.target.blur(); setCity(e.target.value); } });
   const hours = [...Array(24)].map((_, h) => `<option value="${h}">${String(h).padStart(2, "0")}:00</option>`).join("");
@@ -1194,7 +1159,6 @@ function onSetting(k) {
   if (k === "nmode" || k === "nfrom" || k === "nto") { nightWakeUntil = 0; nightTick(); }
   if (k === "fit") refit();
   if (k === "dip") Object.values(playlists).forEach(p => p.reset && p.reset());
-  if (k === "map") showMap(current && current.it);
   if (k === "music" || k === "mvol" || k === "vsound") { if (current) musicFor(activeId, current.el && current.el.tagName === "VIDEO"); }
   if (k === "pie") showPie(current && current.it);
   if (k === "pieSize") { applyPieSize(); fitPie(); }
